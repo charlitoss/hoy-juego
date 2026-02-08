@@ -5,11 +5,51 @@
 const generateId = () => 
   `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-export { generateId };
+// Generate a short 6-character alphanumeric code for sharing
+const generateShortCode = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluded confusing chars: I, O, 0, 1
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
+
+// Generate a unique short code (checks for collisions)
+const generateUniqueShortCode = (existingMatches) => {
+  const existingCodes = new Set(
+    Object.values(existingMatches).map(m => m.codigoCorto).filter(Boolean)
+  );
+  
+  let code = generateShortCode();
+  let attempts = 0;
+  while (existingCodes.has(code) && attempts < 100) {
+    code = generateShortCode();
+    attempts++;
+  }
+  return code;
+};
+
+export { generateId, generateShortCode, generateUniqueShortCode };
 
 export const Storage = {
   // Generate unique ID
   generateId,
+  generateShortCode,
+  generateUniqueShortCode,
+  
+  // Find match by short code
+  getMatchByShortCode: (shortCode) => {
+    try {
+      const matches = Storage.getMatches();
+      return Object.values(matches).find(
+        m => m.codigoCorto?.toUpperCase() === shortCode?.toUpperCase()
+      ) || null;
+    } catch (error) {
+      console.error('Error finding match by short code:', error);
+      return null;
+    }
+  },
   
   // Matches
   getMatches: () => {

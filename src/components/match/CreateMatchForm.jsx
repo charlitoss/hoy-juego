@@ -45,9 +45,12 @@ export default function CreateMatchForm({ onNavigate }) {
 
     try {
       const matchId = Storage.generateId()
+      const existingMatches = Storage.getMatches()
+      const codigoCorto = Storage.generateUniqueShortCode(existingMatches)
       
       const match = {
         id: matchId,
+        codigoCorto: codigoCorto,
         nombre: formData.nombre.trim(),
         fecha: formData.fecha,
         horario: formData.horario,
@@ -56,7 +59,7 @@ export default function CreateMatchForm({ onNavigate }) {
         cantidadJugadores: formData.cantidadJugadores,
         jugadoresPorEquipo: formData.cantidadJugadores / 2,
         pasoActual: 'inscripcion',
-        linkCompartible: `${window.location.origin}${window.location.pathname}#/partido/${matchId}`,
+        linkCompartible: `${window.location.origin}${window.location.pathname}#/p/${codigoCorto}`,
         organizadorId: 'current_user',
         organizadorNombre: 'Organizador',
         createdAt: new Date().toISOString(),
