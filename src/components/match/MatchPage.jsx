@@ -84,6 +84,9 @@ function MatchPage({ matchId, onNavigate }) {
     // Get registrations to sort by timestamp
     const registrations = Storage.getRegistrations(match.id)
     
+    // Track players to remove from the match entirely
+    const playersToRemove = []
+    
     // Process each team
     const teams = ['blanco', 'oscuro']
     let updatedAssignments = [...teamConfig.asignaciones]
@@ -101,15 +104,27 @@ function MatchPage({ matchId, onNavigate }) {
           return timeB - timeA // Descending: newest first
         })
         
-        // Keep only the first newPlayersPerTeam (oldest registered players)
+        // Keep only the oldest registered players
         const playersToKeep = sortedAssignments.slice(sortedAssignments.length - newPlayersPerTeam)
         const playerIdsToKeep = new Set(playersToKeep.map(a => a.jugadorId))
+        
+        // Track players being removed
+        sortedAssignments.forEach(a => {
+          if (!playerIdsToKeep.has(a.jugadorId)) {
+            playersToRemove.push(a.jugadorId)
+          }
+        })
         
         // Filter out removed players from this team
         updatedAssignments = updatedAssignments.filter(a => 
           a.equipo !== team || playerIdsToKeep.has(a.jugadorId)
         )
       }
+    })
+    
+    // Remove registrations for players being removed from the match
+    playersToRemove.forEach(playerId => {
+      Storage.deleteRegistration(match.id, playerId)
     })
     
     // Save updated config

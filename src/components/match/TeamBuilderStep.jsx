@@ -126,6 +126,9 @@ function TeamBuilderStep({ match, onBack, onRegisterAddPlayerHandler }) {
     // Remove player from assignments
     const newAssignments = teamConfig.asignaciones.filter(a => a.jugadorId !== playerId)
     
+    // Remove player's registration from the match entirely
+    Storage.deleteRegistration(match.id, playerId)
+    
     // Check if there are suplentes to promote
     const suplentes = registrations
       .filter(r => r.tipoInscripcion === 'suplente')
