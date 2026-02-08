@@ -34,9 +34,11 @@ function InscriptionStep({ match, onContinue }) {
     setPlayers(allPlayers)
   }, [match.id])
   
+  // Reset modal state and load data when component mounts or match changes
   useEffect(() => {
+    setShowJoinModal(false)
     loadData()
-  }, [loadData])
+  }, [match.id, loadData])
   
   // Sort registrations by timestamp (oldest first = order of inscription)
   const sortedRegistrations = useMemo(() => {

@@ -40,6 +40,13 @@ function TeamBuilderStep({ match, onBack, onRegisterAddPlayerHandler }) {
     return { config, regs, allPlayers }
   }, [match.id])
   
+  // Reset modal states when component mounts
+  useEffect(() => {
+    setShowJoinModal(false)
+    setShowAssignModal(false)
+    setShowPlayerInfo(false)
+  }, [match.id])
+  
   // Auto-generate teams on first load if no assignments exist
   useEffect(() => {
     const { config, regs, allPlayers } = loadData()
