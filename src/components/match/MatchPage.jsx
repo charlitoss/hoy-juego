@@ -167,14 +167,16 @@ function MatchPage({ matchId, onNavigate }) {
         </div>
       )}
       
-      {/* Join Match Modal */}
-      <JoinMatchModal
-        isOpen={showJoinModal}
-        onClose={() => setShowJoinModal(false)}
-        matchId={match.id}
-        match={match}
-        onJoined={handlePlayerJoined}
-      />
+      {/* Join Match Modal - only render when NOT in inscription step (InscriptionStep has its own modal) */}
+      {match.pasoActual !== 'inscripcion' && (
+        <JoinMatchModal
+          isOpen={showJoinModal}
+          onClose={() => setShowJoinModal(false)}
+          matchId={match.id}
+          match={match}
+          onJoined={handlePlayerJoined}
+        />
+      )}
     </div>
   )
 }
