@@ -336,24 +336,31 @@ function TeamBuilderStep({ match, onBack, onRegisterAddPlayerHandler }) {
   }
   
   // Open join modal for empty slot (player only) - receives target team
-  const handleOpenJoinFromEmptySlot = (targetTeam) => {
+  const handleOpenJoinFromEmptySlot = useCallback((targetTeam) => {
     setJoinTargetTeam(targetTeam)
     setJoinModalPlayerOnly(true)
     setShowJoinModal(true)
-  }
-  
+  }, [])
+
   // Open join modal from header (all options)
-  const handleOpenJoinFromHeader = () => {
+  const handleOpenJoinFromHeader = useCallback(() => {
     setJoinModalPlayerOnly(false)
     setShowJoinModal(true)
-  }
-  
+  }, [])
+
   // Register the add player handler for the header button
   useEffect(() => {
     if (onRegisterAddPlayerHandler) {
-      onRegisterAddPlayerHandler(handleOpenJoinFromHeader)
+      onRegisterAddPlayerHandler(() => handleOpenJoinFromHeader())
     }
-  }, [onRegisterAddPlayerHandler])
+    
+    // Cleanup: unregister handler when component unmounts
+    return () => {
+      if (onRegisterAddPlayerHandler) {
+        onRegisterAddPlayerHandler(null)
+      }
+    }
+  }, [onRegisterAddPlayerHandler, handleOpenJoinFromHeader])
   
   // Calculate team stats
   const teamStats = teamConfig ? calculateTeamStats(teamConfig.asignaciones, players, registrations) : null

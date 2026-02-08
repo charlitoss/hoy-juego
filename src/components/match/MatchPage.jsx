@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import EditableMatchHeader from './EditableMatchHeader'
 import InscriptionStep from './InscriptionStep'
 import TeamBuilderStep from './TeamBuilderStep'
@@ -10,10 +10,11 @@ function MatchPage({ matchId, onNavigate }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showJoinModal, setShowJoinModal] = useState(false)
-  const [teamBuilderAddPlayer, setTeamBuilderAddPlayer] = useState(null)
+  const teamBuilderAddPlayerRef = useRef(null)
   
   useEffect(() => {
     setShowJoinModal(false)  // Reset modal state on navigation
+    teamBuilderAddPlayerRef.current = null  // Reset handler on navigation
     loadMatch()
   }, [matchId])
   
@@ -51,17 +52,22 @@ function MatchPage({ matchId, onNavigate }) {
     onNavigate('#/')
   }
   
-  const handleAddPlayer = () => {
+  const handleAddPlayer = useCallback(() => {
     if (match?.pasoActual === 'armado_equipos') {
       // In team builder, only open modal if handler is registered
-      if (teamBuilderAddPlayer) {
-        teamBuilderAddPlayer()
+      if (teamBuilderAddPlayerRef.current) {
+        teamBuilderAddPlayerRef.current()
       }
       // If handler not registered yet, do nothing (wait for TeamBuilderStep to mount)
     } else {
       setShowJoinModal(true)
     }
-  }
+  }, [match?.pasoActual])
+  
+  // Callback to register the team builder's add player handler
+  const registerTeamBuilderAddPlayer = useCallback((handler) => {
+    teamBuilderAddPlayerRef.current = handler
+  }, [])
   
   const handlePlayerJoined = () => {
     loadMatch()
@@ -159,7 +165,7 @@ function MatchPage({ matchId, onNavigate }) {
         <TeamBuilderStep 
           match={match}
           onBack={handleBack}
-          onRegisterAddPlayerHandler={setTeamBuilderAddPlayer}
+          onRegisterAddPlayerHandler={registerTeamBuilderAddPlayer}
         />
       )}
       
