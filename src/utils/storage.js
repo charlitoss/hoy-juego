@@ -2,10 +2,15 @@
  * LocalStorage management utilities
  */
 
-export const generateId = () => 
+const generateId = () => 
   `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+export { generateId };
+
 export const Storage = {
+  // Generate unique ID
+  generateId,
+  
   // Matches
   getMatches: () => {
     try {
@@ -99,12 +104,62 @@ export const Storage = {
     }
   },
   
+  // Team Configurations
+  getTeamConfig: (matchId) => {
+    try {
+      const configs = JSON.parse(localStorage.getItem('team_configurations') || '{}');
+      return configs[matchId] || null;
+    } catch (error) {
+      console.error('Error loading team config:', error);
+      return null;
+    }
+  },
+  
+  saveTeamConfig: (config) => {
+    try {
+      const configs = JSON.parse(localStorage.getItem('team_configurations') || '{}');
+      configs[config.partidoId] = {
+        ...config,
+        updatedAt: new Date().toISOString(),
+        version: (configs[config.partidoId]?.version || 0) + 1
+      };
+      localStorage.setItem('team_configurations', JSON.stringify(configs));
+      return true;
+    } catch (error) {
+      console.error('Error saving team config:', error);
+      return false;
+    }
+  },
+  
+  // Get or create default team config
+  getOrCreateTeamConfig: (matchId) => {
+    let config = Storage.getTeamConfig(matchId);
+    if (!config) {
+      config = {
+        partidoId: matchId,
+        nombreEquipoBlanco: 'Equipo Blanco',
+        nombreEquipoOscuro: 'Equipo Oscuro',
+        asignaciones: [],
+        formacionEquipoBlanco: '4-3-3',
+        formacionEquipoOscuro: '4-3-3',
+        createdBy: 'current_user',
+        version: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      Storage.saveTeamConfig(config);
+    }
+    return config;
+  },
+  
   // Clear all data (useful for testing)
   clearAll: () => {
     try {
       localStorage.removeItem('matches');
       localStorage.removeItem('players');
       localStorage.removeItem('registrations');
+      localStorage.removeItem('team_configurations');
+      localStorage.removeItem('soccer_organizer_initialized');
       return true;
     } catch (error) {
       console.error('Error clearing storage:', error);

@@ -1,0 +1,240 @@
+/**
+ * Team balancing algorithm
+ * Uses snake draft to create balanced teams based on player skill levels
+ */
+
+import { PHYSICAL_STATES } from './constants'
+
+/**
+ * Calculate effective level based on player profile and physical state
+ */
+export function calculateEffectiveLevel(player, registration) {
+  const baseLevel = player?.perfilPermanente?.nivelGeneral || 5
+  const physicalState = PHYSICAL_STATES[registration?.estadoFisico] || PHYSICAL_STATES.normal
+  return baseLevel * physicalState.factor
+}
+
+/**
+ * Get default position coordinates based on role and team
+ */
+function getDefaultPosition(role, team, index, playersPerTeam) {
+  // Field is 100x100, team blanco is top half (y: 0-50), team oscuro is bottom (y: 50-100)
+  const isBlanco = team === 'blanco'
+  const baseY = isBlanco ? 25 : 75
+  
+  const positions = {
+    arquero: { x: 50, y: isBlanco ? 8 : 92 },
+    defensor: [
+      { x: 20, y: baseY - 10 },
+      { x: 40, y: baseY - 10 },
+      { x: 60, y: baseY - 10 },
+      { x: 80, y: baseY - 10 },
+    ],
+    medio: [
+      { x: 25, y: baseY },
+      { x: 50, y: baseY },
+      { x: 75, y: baseY },
+    ],
+    delantero: [
+      { x: 30, y: baseY + 12 },
+      { x: 50, y: baseY + 15 },
+      { x: 70, y: baseY + 12 },
+    ]
+  }
+  
+  if (role === 'arquero') {
+    return positions.arquero
+  }
+  
+  const rolePositions = positions[role] || positions.medio
+  return rolePositions[index % rolePositions.length]
+}
+
+/**
+ * Map player's preferred position to a role
+ */
+function getPreferredRole(player) {
+  const position = player?.perfilPermanente?.posicionPreferida?.toLowerCase() || ''
+  
+  if (position.includes('arquero')) return 'arquero'
+  if (position.includes('defens')) return 'defensor'
+  if (position.includes('medio') || position.includes('mediocampista')) return 'medio'
+  if (position.includes('delant')) return 'delantero'
+  
+  return 'medio' // Default
+}
+
+/**
+ * Generate balanced teams using snake draft algorithm
+ * @param {Array} players - Array of player objects
+ * @param {Array} registrations - Array of registration objects
+ * @param {number} playersPerTeam - Number of players per team
+ * @returns {Array} Array of player assignments
+ */
+export function generateBalancedTeams(players, registrations, playersPerTeam) {
+  // Create player data with effective levels
+  const playerData = players.map(player => {
+    const registration = registrations.find(r => r.jugadorId === player.id)
+    return {
+      player,
+      registration,
+      effectiveLevel: calculateEffectiveLevel(player, registration),
+      preferredRole: getPreferredRole(player)
+    }
+  })
+  
+  // Separate goalkeepers from field players
+  const goalkeepers = playerData.filter(p => p.preferredRole === 'arquero')
+  const fieldPlayers = playerData.filter(p => p.preferredRole !== 'arquero')
+  
+  // Sort by effective level (highest first)
+  goalkeepers.sort((a, b) => b.effectiveLevel - a.effectiveLevel)
+  fieldPlayers.sort((a, b) => b.effectiveLevel - a.effectiveLevel)
+  
+  const assignments = []
+  const teamBlanco = { players: [], totalLevel: 0 }
+  const teamOscuro = { players: [], totalLevel: 0 }
+  
+  // Assign goalkeepers first (one per team)
+  if (goalkeepers.length >= 2) {
+    // Give better goalkeeper to team that will be weaker
+    teamBlanco.players.push({ ...goalkeepers[0], role: 'arquero', team: 'blanco' })
+    teamBlanco.totalLevel += goalkeepers[0].effectiveLevel
+    
+    teamOscuro.players.push({ ...goalkeepers[1], role: 'arquero', team: 'oscuro' })
+    teamOscuro.totalLevel += goalkeepers[1].effectiveLevel
+  } else if (goalkeepers.length === 1) {
+    // Only one goalkeeper - assign to blanco
+    teamBlanco.players.push({ ...goalkeepers[0], role: 'arquero', team: 'blanco' })
+    teamBlanco.totalLevel += goalkeepers[0].effectiveLevel
+  }
+  
+  // Snake draft for field players
+  let direction = teamBlanco.totalLevel <= teamOscuro.totalLevel ? 'blanco' : 'oscuro'
+  
+  fieldPlayers.forEach((playerData, index) => {
+    const blancoFull = teamBlanco.players.length >= playersPerTeam
+    const oscuroFull = teamOscuro.players.length >= playersPerTeam
+    
+    let targetTeam
+    if (blancoFull && !oscuroFull) {
+      targetTeam = teamOscuro
+      direction = 'oscuro'
+    } else if (oscuroFull && !blancoFull) {
+      targetTeam = teamBlanco
+      direction = 'blanco'
+    } else if (direction === 'blanco') {
+      targetTeam = teamBlanco
+      direction = 'oscuro'
+    } else {
+      targetTeam = teamOscuro
+      direction = 'blanco'
+    }
+    
+    // Determine role based on team needs and player preference
+    const role = determineRole(targetTeam, playerData.preferredRole, playersPerTeam)
+    
+    targetTeam.players.push({
+      ...playerData,
+      role,
+      team: targetTeam === teamBlanco ? 'blanco' : 'oscuro'
+    })
+    targetTeam.totalLevel += playerData.effectiveLevel
+  })
+  
+  // Convert to assignment format with positions
+  const roleCounts = { blanco: {}, oscuro: {} }
+  
+  ;[...teamBlanco.players, ...teamOscuro.players].forEach(p => {
+    const team = p.team
+    roleCounts[team][p.role] = (roleCounts[team][p.role] || 0)
+    
+    const position = getDefaultPosition(p.role, team, roleCounts[team][p.role], playersPerTeam)
+    roleCounts[team][p.role]++
+    
+    assignments.push({
+      jugadorId: p.player.id,
+      equipo: team,
+      rol: p.role,
+      coordenadaX: position.x,
+      coordenadaY: position.y
+    })
+  })
+  
+  return assignments
+}
+
+/**
+ * Determine the best role for a player based on team needs
+ */
+function determineRole(team, preferredRole, playersPerTeam) {
+  const currentRoles = team.players.reduce((acc, p) => {
+    acc[p.role] = (acc[p.role] || 0) + 1
+    return acc
+  }, {})
+  
+  // Ideal distribution for different team sizes
+  const idealDistribution = getIdealDistribution(playersPerTeam)
+  
+  // Check if preferred role is available
+  if ((currentRoles[preferredRole] || 0) < idealDistribution[preferredRole]) {
+    return preferredRole
+  }
+  
+  // Find a role that needs players
+  const roleOrder = ['medio', 'defensor', 'delantero', 'arquero']
+  for (const role of roleOrder) {
+    if ((currentRoles[role] || 0) < idealDistribution[role]) {
+      return role
+    }
+  }
+  
+  return preferredRole
+}
+
+/**
+ * Get ideal role distribution based on team size
+ */
+function getIdealDistribution(playersPerTeam) {
+  const distributions = {
+    5: { arquero: 1, defensor: 1, medio: 2, delantero: 1 },
+    6: { arquero: 1, defensor: 2, medio: 2, delantero: 1 },
+    7: { arquero: 1, defensor: 2, medio: 3, delantero: 1 },
+    8: { arquero: 1, defensor: 3, medio: 3, delantero: 1 },
+    9: { arquero: 1, defensor: 3, medio: 3, delantero: 2 },
+    11: { arquero: 1, defensor: 4, medio: 4, delantero: 2 }
+  }
+  
+  return distributions[playersPerTeam] || distributions[7]
+}
+
+/**
+ * Calculate team statistics
+ */
+export function calculateTeamStats(assignments, players, registrations) {
+  const stats = {
+    blanco: { players: [], totalLevel: 0, avgLevel: 0, roles: {} },
+    oscuro: { players: [], totalLevel: 0, avgLevel: 0, roles: {} }
+  }
+  
+  assignments.forEach(assignment => {
+    const player = players[assignment.jugadorId]
+    const registration = registrations.find(r => r.jugadorId === assignment.jugadorId)
+    const effectiveLevel = calculateEffectiveLevel(player, registration)
+    
+    const team = stats[assignment.equipo]
+    team.players.push({ ...assignment, player, effectiveLevel })
+    team.totalLevel += effectiveLevel
+    team.roles[assignment.rol] = (team.roles[assignment.rol] || 0) + 1
+  })
+  
+  // Calculate averages
+  if (stats.blanco.players.length > 0) {
+    stats.blanco.avgLevel = stats.blanco.totalLevel / stats.blanco.players.length
+  }
+  if (stats.oscuro.players.length > 0) {
+    stats.oscuro.avgLevel = stats.oscuro.totalLevel / stats.oscuro.players.length
+  }
+  
+  return stats
+}
