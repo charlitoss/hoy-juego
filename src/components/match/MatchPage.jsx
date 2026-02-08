@@ -52,9 +52,12 @@ function MatchPage({ matchId, onNavigate }) {
   }
   
   const handleAddPlayer = () => {
-    // If we're in team builder step and have a handler, use it
-    if (match?.pasoActual === 'armado_equipos' && teamBuilderAddPlayer) {
-      teamBuilderAddPlayer()
+    if (match?.pasoActual === 'armado_equipos') {
+      // In team builder, only open modal if handler is registered
+      if (teamBuilderAddPlayer) {
+        teamBuilderAddPlayer()
+      }
+      // If handler not registered yet, do nothing (wait for TeamBuilderStep to mount)
     } else {
       setShowJoinModal(true)
     }
