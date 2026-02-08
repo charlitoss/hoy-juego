@@ -29,13 +29,22 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
   useEffect(() => {
     if (isOpen && matchId) {
       const registrations = Storage.getRegistrations(matchId)
-      const jugadores = registrations.filter(r => r.tipoInscripcion !== 'suplente' && r.tipoInscripcion !== 'hinchada').length
       const suplentes = registrations.filter(r => r.tipoInscripcion === 'suplente').length
       
       const matches = Storage.getMatches()
       const currentMatch = matches[matchId]
       const cupoTotal = currentMatch ? currentMatch.jugadoresPorEquipo * 2 : 10
       const maxSuplentes = Math.floor(cupoTotal / 2)
+      
+      let jugadores
+      if (playerOnly) {
+        // In team builder mode, check team assignments instead of registrations
+        // This allows adding new players when spots are freed up by unassigning
+        const teamConfig = Storage.getTeamConfig(matchId)
+        jugadores = teamConfig?.asignaciones?.length || 0
+      } else {
+        jugadores = registrations.filter(r => r.tipoInscripcion !== 'suplente' && r.tipoInscripcion !== 'hinchada').length
+      }
       
       setSpotsInfo({ jugadores, suplentes, cupoTotal, maxSuplentes })
       

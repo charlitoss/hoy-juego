@@ -13,6 +13,7 @@ function MatchPage({ matchId, onNavigate }) {
   const [teamBuilderAddPlayer, setTeamBuilderAddPlayer] = useState(null)
   
   useEffect(() => {
+    setShowJoinModal(false)  // Reset modal state on navigation
     loadMatch()
   }, [matchId])
   
