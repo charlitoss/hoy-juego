@@ -63,6 +63,53 @@ function MatchPage({ matchId, onNavigate }) {
     loadMatch()
   }
   
+  // Handle when players per team is reduced - remove excess players using LIFO
+  const handlePlayersPerTeamChange = (newPlayersPerTeam, oldPlayersPerTeam) => {
+    if (newPlayersPerTeam >= oldPlayersPerTeam) return
+    
+    // Get current team config
+    const teamConfig = Storage.getTeamConfig(match.id)
+    if (!teamConfig || !teamConfig.asignaciones) return
+    
+    // Get registrations to sort by timestamp
+    const registrations = Storage.getRegistrations(match.id)
+    
+    // Process each team
+    const teams = ['blanco', 'oscuro']
+    let updatedAssignments = [...teamConfig.asignaciones]
+    
+    teams.forEach(team => {
+      const teamAssignments = updatedAssignments.filter(a => a.equipo === team)
+      
+      if (teamAssignments.length > newPlayersPerTeam) {
+        // Sort by registration timestamp DESCENDING (newest first = to be removed)
+        const sortedAssignments = teamAssignments.sort((a, b) => {
+          const regA = registrations.find(r => r.jugadorId === a.jugadorId)
+          const regB = registrations.find(r => r.jugadorId === b.jugadorId)
+          const timeA = regA?.timestamp ? new Date(regA.timestamp) : new Date(0)
+          const timeB = regB?.timestamp ? new Date(regB.timestamp) : new Date(0)
+          return timeB - timeA // Descending: newest first
+        })
+        
+        // Keep only the first newPlayersPerTeam (oldest registered players)
+        const playersToKeep = sortedAssignments.slice(sortedAssignments.length - newPlayersPerTeam)
+        const playerIdsToKeep = new Set(playersToKeep.map(a => a.jugadorId))
+        
+        // Filter out removed players from this team
+        updatedAssignments = updatedAssignments.filter(a => 
+          a.equipo !== team || playerIdsToKeep.has(a.jugadorId)
+        )
+      }
+    })
+    
+    // Save updated config
+    const updatedConfig = {
+      ...teamConfig,
+      asignaciones: updatedAssignments
+    }
+    Storage.saveTeamConfig(updatedConfig)
+  }
+  
   if (loading) {
     return (
       <div className="match-page">
@@ -93,6 +140,7 @@ function MatchPage({ matchId, onNavigate }) {
         onMatchUpdate={handleMatchUpdate}
         onBack={handleBack}
         onAddPlayer={handleAddPlayer}
+        onPlayersPerTeamChange={handlePlayersPerTeamChange}
       />
       
       {/* Content based on current step */}

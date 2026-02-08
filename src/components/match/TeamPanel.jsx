@@ -2,9 +2,9 @@ import { X, Info, Plus } from 'lucide-react'
 import { PHYSICAL_STATES } from '../../utils/constants'
 
 // Empty slot component for team spots
-function EmptyTeamSlot({ index, onClick }) {
+function EmptyTeamSlot({ index, onClick, team }) {
   return (
-    <div className="empty-team-slot" onClick={onClick}>
+    <div className="empty-team-slot" onClick={() => onClick(team)}>
       <span className="empty-slot-index">{index + 1}.</span>
       <span className="empty-slot-text">Lugar disponible</span>
     </div>
@@ -95,6 +95,7 @@ function TeamPanel({
             key={`empty-${index}`}
             index={players.length + index}
             onClick={onAddPlayer}
+            team={team}
           />
         ))}
       </div>

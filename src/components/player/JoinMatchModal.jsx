@@ -267,7 +267,8 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
       setIsSubmitting(false)
       
       if (onJoined) {
-        onJoined()
+        // Pass the main player ID so the caller can auto-assign if needed
+        onJoined(mainPlayer.id)
       }
       
       onClose()

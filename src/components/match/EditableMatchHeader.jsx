@@ -5,7 +5,7 @@ import Countdown from '../ui/Countdown'
 import { Storage } from '../../utils/storage'
 import { formatDate } from '../../utils/dateUtils'
 
-function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer }) {
+function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlayersPerTeamChange }) {
   const [editingField, setEditingField] = useState(null)
   const [editValue, setEditValue] = useState('')
   
@@ -27,14 +27,26 @@ function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer }) {
       return
     }
     
+    const newValue = editingField === 'jugadoresPorEquipo' 
+      ? parseInt(editValue, 10) 
+      : editValue.trim()
+    
     const updatedMatch = {
       ...match,
-      [editingField]: editingField === 'jugadoresPorEquipo' 
-        ? parseInt(editValue, 10) 
-        : editValue.trim()
+      [editingField]: newValue
     }
     
     Storage.saveMatch(updatedMatch)
+    
+    // If players per team changed and we have a handler, call it
+    if (editingField === 'jugadoresPorEquipo' && onPlayersPerTeamChange) {
+      const oldValue = match.jugadoresPorEquipo
+      if (newValue < oldValue) {
+        // Notify parent to handle excess players
+        onPlayersPerTeamChange(newValue, oldValue)
+      }
+    }
+    
     onMatchUpdate(updatedMatch)
     cancelEdit()
   }

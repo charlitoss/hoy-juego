@@ -20,6 +20,7 @@ function TeamBuilderStep({ match, onBack, onRegisterAddPlayerHandler }) {
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [joinModalPlayerOnly, setJoinModalPlayerOnly] = useState(false)
+  const [joinTargetTeam, setJoinTargetTeam] = useState(null) // Track which team the empty slot was clicked on
   const [showPlayerInfo, setShowPlayerInfo] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState(null)
   const [selectedRegistration, setSelectedRegistration] = useState(null)
@@ -276,13 +277,60 @@ function TeamBuilderStep({ match, onBack, onRegisterAddPlayerHandler }) {
     setShowPlayerInfo(true)
   }
   
-  // Handle new player joined
-  const handlePlayerJoined = () => {
+  // Handle new player joined - auto-assign to target team if specified
+  const handlePlayerJoined = (newPlayerId) => {
+    const { config } = loadData()
+    
+    // If we have a target team from clicking an empty slot, auto-assign the player
+    if (joinTargetTeam && newPlayerId) {
+      // Get the new player's info
+      const allPlayers = Storage.getPlayers()
+      const newPlayer = allPlayers[newPlayerId]
+      
+      if (newPlayer) {
+        // Get default role based on player preference
+        const preferredPosition = newPlayer?.perfilPermanente?.posicionPreferida || 'Mediocampista'
+        const roleMap = {
+          'Arquero': 'arquero',
+          'Defensor': 'defensor',
+          'Mediocampista': 'medio',
+          'Delantero': 'delantero'
+        }
+        const role = roleMap[preferredPosition] || 'medio'
+        
+        // Calculate position
+        const teamAssignments = config.asignaciones.filter(a => a.equipo === joinTargetTeam)
+        const roleCount = teamAssignments.filter(a => a.rol === role).length
+        const position = getDefaultPosition(role, joinTargetTeam, roleCount)
+        
+        const newAssignment = {
+          jugadorId: newPlayerId,
+          equipo: joinTargetTeam,
+          rol: role,
+          coordenadaX: position.x,
+          coordenadaY: position.y
+        }
+        
+        const updatedConfig = {
+          ...config,
+          asignaciones: [...config.asignaciones, newAssignment]
+        }
+        
+        setTeamConfig(updatedConfig)
+        Storage.saveTeamConfig(updatedConfig)
+      }
+    }
+    
+    // Reset target team
+    setJoinTargetTeam(null)
+    
+    // Reload data to refresh UI
     loadData()
   }
   
-  // Open join modal for empty slot (player only)
-  const handleOpenJoinFromEmptySlot = () => {
+  // Open join modal for empty slot (player only) - receives target team
+  const handleOpenJoinFromEmptySlot = (targetTeam) => {
+    setJoinTargetTeam(targetTeam)
     setJoinModalPlayerOnly(true)
     setShowJoinModal(true)
   }
