@@ -75,30 +75,6 @@ Anotate acá: ${shareUrl}`
     setShowMenu(false)
   }
   
-  const copyWhatsAppMessage = async () => {
-    const message = getWhatsAppMessage()
-    try {
-      await navigator.clipboard.writeText(message)
-      setCopied(true)
-      setTimeout(() => {
-        setCopied(false)
-        setShowMenu(false)
-      }, 1500)
-    } catch (err) {
-      const textArea = document.createElement('textarea')
-      textArea.value = message
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
-      setCopied(true)
-      setTimeout(() => {
-        setCopied(false)
-        setShowMenu(false)
-      }, 1500)
-    }
-  }
-  
   return (
     <div className="share-button-container" ref={menuRef}>
       <button 
@@ -129,12 +105,6 @@ Anotate acá: ${shareUrl}`
             <button className="share-option" onClick={shareWhatsApp}>
               <MessageCircle size={18} />
               <span>Enviar por WhatsApp</span>
-            </button>
-            
-            <button className="share-option" onClick={copyWhatsAppMessage}>
-              <MessageCircle size={18} />
-              <span>{copied ? '¡Copiado!' : 'Copiar mensaje'}</span>
-              {copied && <Check size={16} className="copied-icon" />}
             </button>
             
             <button className="share-option" onClick={copyLink}>
