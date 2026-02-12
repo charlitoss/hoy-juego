@@ -1,7 +1,7 @@
 import { Clock, ArrowUp } from 'lucide-react'
 import { PHYSICAL_STATES } from '../../utils/constants'
 
-function SuplentesPanel({ suplentes, players, registrations, onPromote }) {
+function SuplentesPanel({ suplentes, players, registrations, onPromote, currentAssignments = [], playersPerTeam = 7 }) {
   // Get physical state for a player
   const getPhysicalState = (playerId) => {
     const reg = registrations.find(r => r.jugadorId === playerId)
@@ -11,6 +11,11 @@ function SuplentesPanel({ suplentes, players, registrations, onPromote }) {
   if (suplentes.length === 0) {
     return null
   }
+  
+  // Check if teams are full (can't promote if both teams are at capacity)
+  const totalAssigned = currentAssignments.length
+  const maxPlayers = playersPerTeam * 2
+  const canPromote = totalAssigned < maxPlayers
   
   // Sort by timestamp (oldest first = higher priority)
   const sortedSuplentes = [...suplentes].sort((a, b) => 
@@ -35,7 +40,7 @@ function SuplentesPanel({ suplentes, players, registrations, onPromote }) {
               <span className="suplente-priority">{index + 1}</span>
               <span className="suplente-name">{player.nombre}</span>
               <span className="suplente-state">{state.emoji}</span>
-              {onPromote && (
+              {onPromote && canPromote && (
                 <button 
                   className="btn-promote"
                   onClick={() => onPromote(player.id)}
@@ -48,6 +53,11 @@ function SuplentesPanel({ suplentes, players, registrations, onPromote }) {
           )
         })}
       </div>
+      {!canPromote && suplentes.length > 0 && (
+        <div className="suplentes-full-notice">
+          Equipos completos
+        </div>
+      )}
     </div>
   )
 }

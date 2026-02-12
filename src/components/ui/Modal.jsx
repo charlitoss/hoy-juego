@@ -1,25 +1,34 @@
 import { useEffect } from 'react'
 import { X } from 'lucide-react'
 
-function Modal({ isOpen, onClose, title, children, footer }) {
-  // Close on escape key
+function Modal({ isOpen, onClose, title, children, footer, onSubmit }) {
+  // Handle keyboard shortcuts
   useEffect(() => {
-    const handleEscape = (e) => {
+    const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose()
+      }
+      // Enter to submit (but not when in textarea or when shift is pressed)
+      if (e.key === 'Enter' && !e.shiftKey && onSubmit) {
+        const target = e.target
+        // Don't submit if user is in a textarea or the friend input field
+        if (target.tagName !== 'TEXTAREA' && !target.classList.contains('friend-input')) {
+          e.preventDefault()
+          onSubmit()
+        }
       }
     }
     
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
+      document.addEventListener('keydown', handleKeyDown)
       document.body.style.overflow = 'hidden'
     }
     
     return () => {
-      document.removeEventListener('keydown', handleEscape)
+      document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = ''
     }
-  }, [isOpen, onClose])
+  }, [isOpen, onClose, onSubmit])
   
   if (!isOpen) return null
   

@@ -1,16 +1,13 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { PHYSICAL_STATES } from '../../utils/constants'
 
 function SoccerField({ 
   teamConfig, 
   players, 
   registrations, 
-  onTeamNameChange, 
   onPositionChange,
   onPlayerClick 
 }) {
-  const [editingTeam, setEditingTeam] = useState(null)
-  const [teamName, setTeamName] = useState('')
   const [dragging, setDragging] = useState(null)
   const fieldRef = useRef(null)
   
@@ -34,29 +31,6 @@ function SoccerField({
       delantero: 'DEL'
     }
     return abbrs[role] || ''
-  }
-  
-  // Handle team name edit
-  const handleStartEdit = (team) => {
-    setEditingTeam(team)
-    setTeamName(team === 'blanco' ? teamConfig.nombreEquipoBlanco : teamConfig.nombreEquipoOscuro)
-  }
-  
-  const handleSaveTeamName = () => {
-    if (editingTeam && teamName.trim()) {
-      onTeamNameChange(editingTeam, teamName.trim())
-    }
-    setEditingTeam(null)
-    setTeamName('')
-  }
-  
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleSaveTeamName()
-    } else if (e.key === 'Escape') {
-      setEditingTeam(null)
-      setTeamName('')
-    }
   }
   
   // Drag and drop handlers
@@ -150,30 +124,6 @@ function SoccerField({
   
   return (
     <div className="soccer-field-container">
-      {/* Team Blanco Name */}
-      <div className="team-name team-name-top">
-        {editingTeam === 'blanco' ? (
-          <input
-            type="text"
-            value={teamName}
-            onChange={(e) => setTeamName(e.target.value)}
-            onBlur={handleSaveTeamName}
-            onKeyDown={handleKeyDown}
-            className="team-name-input"
-            autoFocus
-            maxLength={30}
-          />
-        ) : (
-          <button 
-            className="team-name-btn team-blanco-name"
-            onClick={() => handleStartEdit('blanco')}
-          >
-            {teamConfig.nombreEquipoBlanco}
-            <span className="edit-hint">✏️</span>
-          </button>
-        )}
-      </div>
-      
       {/* Soccer Field SVG */}
       <div 
         ref={fieldRef}
@@ -224,30 +174,6 @@ function SoccerField({
             <p>Asigna jugadores a los equipos</p>
             <p>desde el panel lateral</p>
           </div>
-        )}
-      </div>
-      
-      {/* Team Oscuro Name */}
-      <div className="team-name team-name-bottom">
-        {editingTeam === 'oscuro' ? (
-          <input
-            type="text"
-            value={teamName}
-            onChange={(e) => setTeamName(e.target.value)}
-            onBlur={handleSaveTeamName}
-            onKeyDown={handleKeyDown}
-            className="team-name-input"
-            autoFocus
-            maxLength={30}
-          />
-        ) : (
-          <button 
-            className="team-name-btn team-oscuro-name"
-            onClick={() => handleStartEdit('oscuro')}
-          >
-            {teamConfig.nombreEquipoOscuro}
-            <span className="edit-hint">✏️</span>
-          </button>
         )}
       </div>
     </div>

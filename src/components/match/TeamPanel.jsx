@@ -1,4 +1,5 @@
-import { X, Info, Plus } from 'lucide-react'
+import { useState } from 'react'
+import { X, Info, Edit2, Check } from 'lucide-react'
 import { PHYSICAL_STATES } from '../../utils/constants'
 
 // Empty slot component for team spots
@@ -19,8 +20,31 @@ function TeamPanel({
   onViewInfo,
   onUnassign,
   onAddPlayer, // Prop for adding player
+  onTeamNameChange, // Callback for name change
   jugadoresPorEquipo // Number of players per team
 }) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  
+  const handleStartEdit = () => {
+    setEditName(teamName)
+    setIsEditing(true)
+  }
+  
+  const handleSave = () => {
+    if (editName.trim() && onTeamNameChange) {
+      onTeamNameChange(team, editName.trim())
+    }
+    setIsEditing(false)
+  }
+  
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSave()
+    } else if (e.key === 'Escape') {
+      setIsEditing(false)
+    }
+  }
   // Get physical state for a player
   const getPhysicalState = (playerId) => {
     const reg = registrations.find(r => r.jugadorId === playerId)
@@ -81,7 +105,28 @@ function TeamPanel({
   return (
     <div className={`team-panel team-panel-${team}`}>
       <div className={`team-panel-header team-${team}`}>
-        <h3 className="team-panel-title">{teamName}</h3>
+        {isEditing ? (
+          <div className="team-panel-title-edit">
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={handleSave}
+              className="team-name-input-inline"
+              autoFocus
+              maxLength={25}
+            />
+            <button className="btn-icon-sm btn-save-name" onClick={handleSave}>
+              <Check size={14} />
+            </button>
+          </div>
+        ) : (
+          <h3 className="team-panel-title" onClick={handleStartEdit} title="Click para editar">
+            {teamName}
+            <Edit2 size={12} className="edit-icon-inline" />
+          </h3>
+        )}
         <span className="team-panel-count">{players.length}</span>
       </div>
       

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, UserPlus, Users, Clock, Eye } from 'lucide-react'
 import Modal from '../ui/Modal'
 import { PHYSICAL_STATES } from '../../utils/constants'
@@ -19,6 +19,7 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
   // Friends to add
   const [friendName, setFriendName] = useState('')
   const [friends, setFriends] = useState([])
+  const friendInputRef = useRef(null)
   
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -77,65 +78,80 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
     return true // hinchada always available
   }
   
-  // Add friend to the list
+  // Add friend(s) to the list - supports multiple names separated by comma
   const handleAddFriend = () => {
     setError('')
     
-    const trimmedName = friendName.trim()
-    if (!trimmedName) {
+    // Parse multiple names separated by comma
+    const names = friendName.split(',').map(n => n.trim()).filter(n => n.length > 0)
+    
+    if (names.length === 0) {
       setError('Ingresa el nombre del amigo')
       return
     }
     
-    if (trimmedName.length < 2) {
-      setError('El nombre debe tener al menos 2 caracteres')
-      return
-    }
-    
-    // Check if same as main player
-    if (nombre.trim().toLowerCase() === trimmedName.toLowerCase()) {
-      setError('El amigo no puede tener el mismo nombre que tú')
-      return
-    }
-    
-    // Check if already in the friends list
-    const alreadyInList = friends.some(
-      f => f.nombre.toLowerCase() === trimmedName.toLowerCase()
-    )
-    
-    if (alreadyInList) {
-      setError('Este amigo ya está en la lista')
-      return
-    }
-    
-    // Check if already registered in the match
     const existingRegistrations = Storage.getRegistrations(matchId)
-    const players = Storage.getPlayers()
-    const existingPlayer = Object.values(players).find(
-      p => p.nombre.toLowerCase() === trimmedName.toLowerCase()
-    )
+    const allPlayers = Storage.getPlayers()
+    const errors = []
+    const newFriends = []
     
-    if (existingPlayer) {
-      const alreadyRegistered = existingRegistrations.some(
-        r => r.jugadorId === existingPlayer.id
-      )
-      if (alreadyRegistered) {
-        setError('Este jugador ya está inscrito en el partido')
-        return
+    for (const name of names) {
+      // Validate name length
+      if (name.length < 2) {
+        errors.push(`"${name}" debe tener al menos 2 caracteres`)
+        continue
       }
+      
+      // Check if same as main player
+      if (nombre.trim().toLowerCase() === name.toLowerCase()) {
+        errors.push(`"${name}" es tu propio nombre`)
+        continue
+      }
+      
+      // Check if already in the friends list (existing + new)
+      const alreadyInList = friends.some(f => f.nombre.toLowerCase() === name.toLowerCase()) ||
+        newFriends.some(f => f.nombre.toLowerCase() === name.toLowerCase())
+      
+      if (alreadyInList) {
+        errors.push(`"${name}" ya está en la lista`)
+        continue
+      }
+      
+      // Check if already registered in the match
+      const existingPlayer = Object.values(allPlayers).find(
+        p => p.nombre.toLowerCase() === name.toLowerCase()
+      )
+      
+      if (existingPlayer) {
+        const alreadyRegistered = existingRegistrations.some(
+          r => r.jugadorId === existingPlayer.id
+        )
+        if (alreadyRegistered) {
+          errors.push(`"${name}" ya está inscrito en el partido`)
+          continue
+        }
+      }
+      
+      // Valid - add to new friends
+      newFriends.push({
+        id: `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        nombre: name
+      })
     }
     
-    // Add to friends list
-    setFriends([
-      ...friends,
-      {
-        id: Date.now().toString(),
-        nombre: trimmedName
-      }
-    ])
+    // Add valid friends
+    if (newFriends.length > 0) {
+      setFriends([...friends, ...newFriends])
+    }
     
-    // Clear friend input
+    // Show errors if any
+    if (errors.length > 0) {
+      setError(errors.join('. '))
+    }
+    
+    // Clear input and keep focus
     setFriendName('')
+    friendInputRef.current?.focus()
   }
   
   // Remove friend from list
@@ -187,6 +203,10 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
     try {
       const players = { ...allPlayers }
       
+      // Calculate how many spots are available for jugadores
+      const availableJugadorSpots = spotsInfo.cupoTotal - spotsInfo.jugadores
+      const totalToRegister = 1 + friends.length // main player + friends
+      
       // 1. Register main player
       let mainPlayer = Object.values(players).find(
         p => p.nombre.toLowerCase() === trimmedName.toLowerCase()
@@ -215,6 +235,7 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
         players[mainPlayer.id] = mainPlayer
       }
       
+      // Main player always gets their selected type
       const mainRegistration = {
         jugadorId: mainPlayer.id,
         partidoId: matchId,
@@ -226,7 +247,10 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
       }
       Storage.saveRegistration(mainRegistration)
       
-      // 2. Register friends (same type as main player, except hinchada friends are also hinchada)
+      // Track how many jugador spots we've used (1 for main player if they're jugador)
+      let jugadorSpotsUsed = tipoInscripcion === 'jugador' ? 1 : 0
+      
+      // 2. Register friends - overflow goes to suplentes if registering as jugador
       friends.forEach((friend, index) => {
         let friendPlayer = Object.values(players).find(
           p => p.nombre.toLowerCase() === friend.nombre.toLowerCase()
@@ -255,11 +279,23 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
           players[friendPlayer.id] = friendPlayer
         }
         
+        // Determine registration type for this friend
+        let friendType = tipoInscripcion
+        if (tipoInscripcion === 'jugador') {
+          // Check if we still have jugador spots
+          if (jugadorSpotsUsed >= availableJugadorSpots) {
+            // Overflow to suplente
+            friendType = 'suplente'
+          } else {
+            jugadorSpotsUsed++
+          }
+        }
+        
         const friendRegistration = {
           jugadorId: friendPlayer.id,
           partidoId: matchId,
           estadoFisico: 'normal',
-          tipoInscripcion: tipoInscripcion,
+          tipoInscripcion: friendType,
           timestamp: new Date(Date.now() + index + 1).toISOString(),
           confirmado: true,
           asistira: true
@@ -312,6 +348,7 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
+      onSubmit={handleSubmit}
       title="Anotarse al Partido"
       footer={
         <>
@@ -421,12 +458,13 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
             
             <div className="friend-input-row">
               <input
+                ref={friendInputRef}
                 type="text"
                 value={friendName}
                 onChange={(e) => setFriendName(e.target.value)}
                 onKeyDown={handleFriendKeyDown}
                 placeholder="Nombre del amigo"
-                maxLength={50}
+                maxLength={200}
                 className="friend-input"
               />
               <button 
@@ -438,6 +476,7 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
                 <span className="btn-add-friend-text">Agregar</span>
               </button>
             </div>
+            <span className="hint">Podés agregar varios separados por coma</span>
             
             {/* Friends list */}
             {friends.length > 0 && (

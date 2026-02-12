@@ -1,14 +1,78 @@
 /**
  * Team balancing algorithm
  * Uses snake draft to create balanced teams based on player skill levels
+ * and position-weighted attributes
  */
 
 import { PHYSICAL_STATES } from './constants'
 
 /**
- * Calculate effective level based on player profile and physical state
+ * Position-specific attribute weights
+ * Each position values different attributes differently
  */
-export function calculateEffectiveLevel(player, registration) {
+const POSITION_WEIGHTS = {
+  arquero: {
+    defensa: 0.35,
+    resistencia: 0.25,
+    tecnica: 0.20,
+    velocidad: 0.10,
+    pase: 0.10
+  },
+  defensor: {
+    defensa: 0.35,
+    resistencia: 0.25,
+    velocidad: 0.15,
+    pase: 0.15,
+    tecnica: 0.10
+  },
+  medio: {
+    pase: 0.25,
+    tecnica: 0.25,
+    resistencia: 0.20,
+    defensa: 0.15,
+    ataque: 0.15
+  },
+  delantero: {
+    ataque: 0.35,
+    velocidad: 0.25,
+    tecnica: 0.20,
+    pase: 0.10,
+    resistencia: 0.10
+  }
+}
+
+/**
+ * Calculate position-weighted level based on player attributes and role
+ * @param {Object} player - Player object with perfilPermanente.atributos
+ * @param {string} role - The role/position being evaluated
+ * @returns {number} Weighted level for that position (1-10 scale)
+ */
+function calculatePositionWeightedLevel(player, role) {
+  const attrs = player?.perfilPermanente?.atributos || {}
+  const weights = POSITION_WEIGHTS[role] || POSITION_WEIGHTS.medio
+  
+  let weightedLevel = 0
+  for (const [attr, weight] of Object.entries(weights)) {
+    // Default attribute value is 5 if not set
+    weightedLevel += (attrs[attr] || 5) * weight
+  }
+  
+  return weightedLevel
+}
+
+/**
+ * Calculate effective level based on player profile, role, and physical state
+ * Uses position-weighted attributes for more accurate balancing
+ */
+export function calculateEffectiveLevel(player, registration, role = null) {
+  // If role is provided, use position-weighted calculation
+  if (role) {
+    const positionLevel = calculatePositionWeightedLevel(player, role)
+    const physicalState = PHYSICAL_STATES[registration?.estadoFisico] || PHYSICAL_STATES.normal
+    return positionLevel * physicalState.factor
+  }
+  
+  // Fallback to general level if no role specified
   const baseLevel = player?.perfilPermanente?.nivelGeneral || 5
   const physicalState = PHYSICAL_STATES[registration?.estadoFisico] || PHYSICAL_STATES.normal
   return baseLevel * physicalState.factor
@@ -72,14 +136,16 @@ function getPreferredRole(player) {
  * @returns {Array} Array of player assignments
  */
 export function generateBalancedTeams(players, registrations, playersPerTeam) {
-  // Create player data with effective levels
+  // Create player data with effective levels based on their preferred position
   const playerData = players.map(player => {
     const registration = registrations.find(r => r.jugadorId === player.id)
+    const preferredRole = getPreferredRole(player)
     return {
       player,
       registration,
-      effectiveLevel: calculateEffectiveLevel(player, registration),
-      preferredRole: getPreferredRole(player)
+      // Calculate level based on their preferred position's attributes
+      effectiveLevel: calculateEffectiveLevel(player, registration, preferredRole),
+      preferredRole
     }
   })
   
@@ -210,6 +276,7 @@ function getIdealDistribution(playersPerTeam) {
 
 /**
  * Calculate team statistics
+ * Uses position-weighted levels for accurate team strength comparison
  */
 export function calculateTeamStats(assignments, players, registrations) {
   const stats = {
@@ -220,7 +287,8 @@ export function calculateTeamStats(assignments, players, registrations) {
   assignments.forEach(assignment => {
     const player = players[assignment.jugadorId]
     const registration = registrations.find(r => r.jugadorId === assignment.jugadorId)
-    const effectiveLevel = calculateEffectiveLevel(player, registration)
+    // Use position-weighted level based on assigned role
+    const effectiveLevel = calculateEffectiveLevel(player, registration, assignment.rol)
     
     const team = stats[assignment.equipo]
     team.players.push({ ...assignment, player, effectiveLevel })

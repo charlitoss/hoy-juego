@@ -399,6 +399,7 @@ function TeamBuilderStep({ match, onBack, onRegisterAddPlayerHandler }) {
           onViewInfo={handleViewPlayerInfo}
           onUnassign={handleUnassignPlayer}
           onAddPlayer={handleOpenJoinFromEmptySlot}
+          onTeamNameChange={handleTeamNameChange}
           jugadoresPorEquipo={match.jugadoresPorEquipo}
         />
         
@@ -408,7 +409,6 @@ function TeamBuilderStep({ match, onBack, onRegisterAddPlayerHandler }) {
             teamConfig={teamConfig}
             players={players}
             registrations={registrations}
-            onTeamNameChange={handleTeamNameChange}
             onPositionChange={handlePositionChange}
             onPlayerClick={handleViewPlayerInfo}
           />
@@ -427,6 +427,8 @@ function TeamBuilderStep({ match, onBack, onRegisterAddPlayerHandler }) {
               players={players}
               registrations={registrations}
               onPromote={handlePromoteSuplente}
+              currentAssignments={teamConfig?.asignaciones || []}
+              playersPerTeam={match.jugadoresPorEquipo}
             />
             <HinchadaPanel 
               hinchada={hinchada}
@@ -444,6 +446,7 @@ function TeamBuilderStep({ match, onBack, onRegisterAddPlayerHandler }) {
           onViewInfo={handleViewPlayerInfo}
           onUnassign={handleUnassignPlayer}
           onAddPlayer={handleOpenJoinFromEmptySlot}
+          onTeamNameChange={handleTeamNameChange}
           jugadoresPorEquipo={match.jugadoresPorEquipo}
         />
       </div>
