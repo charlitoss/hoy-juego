@@ -33,17 +33,18 @@ function SuplentesPanel({ suplentes, players, registrations, onPromote, currentA
           const player = players[reg.jugadorId]
           if (!player) return null
           
-          const state = getPhysicalState(player.id)
+          const playerId = player._id || player.id
+          const state = getPhysicalState(playerId)
           
           return (
-            <div key={player.id} className="suplente-item">
+            <div key={playerId} className="suplente-item">
               <span className="suplente-priority">{index + 1}</span>
               <span className="suplente-name">{player.nombre}</span>
               <span className="suplente-state">{state.emoji}</span>
               {onPromote && canPromote && (
                 <button 
                   className="btn-promote"
-                  onClick={() => onPromote(player.id)}
+                  onClick={() => onPromote(playerId)}
                   title="Promover a jugador"
                 >
                   <ArrowUp size={12} />

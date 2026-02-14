@@ -1,20 +1,23 @@
 import { useMemo } from 'react'
 import { Calendar, MapPin, Users, ChevronRight } from 'lucide-react'
-import { Storage } from '../../utils/storage'
+import { useQuery } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import { formatDate } from '../../utils/dateUtils'
 
 export default function MatchCard({ match, onClick }) {
   // Memoize expensive operations
   const dateInfo = useMemo(() => formatDate(match.fecha), [match.fecha])
   
+  const registrations = useQuery(api.registrations.listByMatch, { matchId: match._id })
+  
   const { confirmedCount, isReady } = useMemo(() => {
-    const registrations = Storage.getRegistrations(match.id)
+    if (!registrations) return { confirmedCount: 0, isReady: false }
     const confirmed = registrations.filter(r => r.asistira).length
     return {
       confirmedCount: confirmed,
       isReady: confirmed >= match.cantidadJugadores
     }
-  }, [match.id, match.cantidadJugadores])
+  }, [registrations, match.cantidadJugadores])
 
   // Safely get location display (handle missing comma)
   const locationDisplay = useMemo(() => {

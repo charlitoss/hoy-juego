@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { UserPlus, ArrowRight, Plus } from 'lucide-react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import ProgressBar from '../ui/ProgressBar'
 import PlayerCard from '../player/PlayerCard'
 import JoinMatchModal from '../player/JoinMatchModal'
 import PlayerInfoModal from '../player/PlayerInfoModal'
-import { Storage } from '../../utils/storage'
 
 // Empty slot component for available spots
 function EmptySlot({ index, onClick }) {
@@ -18,28 +19,37 @@ function EmptySlot({ index, onClick }) {
 }
 
 function InscriptionStep({ match, onContinue }) {
-  const [registrations, setRegistrations] = useState([])
-  const [players, setPlayers] = useState({})
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [showPlayerInfo, setShowPlayerInfo] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState(null)
   const [selectedRegistration, setSelectedRegistration] = useState(null)
   
-  // Load registrations and players
-  const loadData = useCallback(() => {
-    const regs = Storage.getRegistrations(match.id).filter(r => r.asistira)
-    setRegistrations(regs)
-    
-    const allPlayers = Storage.getPlayers()
-    setPlayers(allPlayers)
-  }, [match.id])
+  // Convex queries
+  const registrationsData = useQuery(api.registrations.listByMatch, { matchId: match._id })
+  const playersData = useQuery(api.players.list)
   
-  // Reset modal state and load data when component mounts or match changes
-  // Also reload when cantidadJugadores changes to update empty slots
+  // Convex mutations
+  const updateMatch = useMutation(api.matches.update)
+  
+  // Convert players array to object for easy lookup
+  const players = useMemo(() => {
+    if (!playersData) return {}
+    return playersData.reduce((acc, player) => {
+      acc[player._id] = player
+      return acc
+    }, {})
+  }, [playersData])
+  
+  // Filter registrations that will attend
+  const registrations = useMemo(() => {
+    if (!registrationsData) return []
+    return registrationsData.filter(r => r.asistira)
+  }, [registrationsData])
+  
+  // Reset modal state when match changes
   useEffect(() => {
     setShowJoinModal(false)
-    loadData()
-  }, [match.id, match.cantidadJugadores, loadData])
+  }, [match._id])
   
   // Sort registrations by timestamp (oldest first = order of inscription)
   const sortedRegistrations = useMemo(() => {
@@ -53,27 +63,29 @@ function InscriptionStep({ match, onContinue }) {
   const isQuotaComplete = confirmedCount >= requiredCount
   
   const handleJoined = () => {
-    loadData()
+    // Data will auto-refresh via Convex
   }
   
   const handleViewPlayerInfo = (player) => {
-    const reg = registrations.find(r => r.jugadorId === player.id)
+    const reg = registrations.find(r => r.jugadorId === player._id)
     setSelectedPlayer(player)
     setSelectedRegistration(reg)
     setShowPlayerInfo(true)
   }
   
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (isQuotaComplete && onContinue) {
       // Update match step
-      const updatedMatch = {
-        ...match,
+      await updateMatch({
+        matchId: match._id,
         pasoActual: 'armado_equipos',
-        updatedAt: new Date().toISOString()
-      }
-      Storage.saveMatch(updatedMatch)
+      })
       onContinue()
     }
+  }
+  
+  if (registrationsData === undefined || playersData === undefined) {
+    return <div className="loading">Cargando...</div>
   }
   
   return (
@@ -139,7 +151,7 @@ function InscriptionStep({ match, onContinue }) {
       <JoinMatchModal
         isOpen={showJoinModal}
         onClose={() => setShowJoinModal(false)}
-        matchId={match.id}
+        matchId={match._id}
         onJoined={handleJoined}
         playerOnly={!isQuotaComplete}
       />

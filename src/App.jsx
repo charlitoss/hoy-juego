@@ -1,8 +1,44 @@
 import { useState, useEffect } from 'react'
-import MatchList from './components/match/MatchList'
-import CreateMatchForm from './components/match/CreateMatchForm'
+import { useQuery } from 'convex/react'
+import { api } from '../convex/_generated/api'
+import LandingPage from './components/landing/LandingPage'
 import MatchPage from './components/match/MatchPage'
-import { Storage } from './utils/storage'
+
+// Component to handle short code redirect
+function ShortCodeRedirect({ shortCode, onNavigate }) {
+  const match = useQuery(api.matches.getByShortCode, { shortCode: shortCode.toUpperCase() })
+  
+  useEffect(() => {
+    if (match) {
+      // Redirect to the full match URL
+      window.location.hash = `#/partido/${match._id}`
+    }
+  }, [match])
+  
+  if (match === undefined) {
+    return (
+      <div className="match-page">
+        <div className="loading">Cargando...</div>
+      </div>
+    )
+  }
+  
+  if (match === null) {
+    return (
+      <div className="match-page">
+        <div className="error-state">
+          <h3>Partido no encontrado</h3>
+          <p>El código <strong>{shortCode.toUpperCase()}</strong> no corresponde a ningún partido.</p>
+          <button className="btn btn-primary" onClick={() => onNavigate('#/')}>
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    )
+  }
+  
+  return null
+}
 
 function App() {
   const [route, setRoute] = useState(window.location.hash || '#/')
@@ -23,35 +59,20 @@ function App() {
   // Parse route
   const getRouteComponent = () => {
     if (route === '#/' || route === '' || route === '#') {
-      return <MatchList onNavigate={navigate} />
+      return <LandingPage onNavigate={navigate} />
     }
     
+    // Redirect #/crear to home (form is now in the landing hero)
     if (route === '#/crear') {
-      return <CreateMatchForm onNavigate={navigate} />
+      window.location.hash = '#/'
+      return <LandingPage onNavigate={navigate} />
     }
     
     // Short code route: #/p/ABC123
     const shortCodeRoute = route.match(/^#\/p\/([A-Za-z0-9]{6})$/)
     if (shortCodeRoute) {
-      const shortCode = shortCodeRoute[1].toUpperCase()
-      const match = Storage.getMatchByShortCode(shortCode)
-      if (match) {
-        // Redirect to the full match URL
-        window.location.hash = `#/partido/${match.id}`
-        return null
-      }
-      // Show error if match not found
-      return (
-        <div className="match-page">
-          <div className="error-state">
-            <h3>Partido no encontrado</h3>
-            <p>El código <strong>{shortCode}</strong> no corresponde a ningún partido.</p>
-            <button className="btn btn-primary" onClick={() => navigate('#/')}>
-              Volver al inicio
-            </button>
-          </div>
-        </div>
-      )
+      const shortCode = shortCodeRoute[1]
+      return <ShortCodeRedirect shortCode={shortCode} onNavigate={navigate} />
     }
     
     // Match detail route: #/partido/match_123
@@ -62,7 +83,7 @@ function App() {
     }
     
     // 404 - redirect to home
-    return <MatchList onNavigate={navigate} />
+    return <LandingPage onNavigate={navigate} />
   }
   
   return (

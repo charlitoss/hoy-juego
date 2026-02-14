@@ -65,12 +65,14 @@ function AssignPlayerModal({
   
   const handleAssign = () => {
     if (selectedTeam && selectedRole) {
-      onAssign(player.id, selectedTeam, selectedRole)
+      const playerId = player._id || player.id
+      onAssign(playerId, selectedTeam, selectedRole)
     }
   }
   
   const handleUnassign = () => {
-    onUnassign(player.id)
+    const playerId = player._id || player.id
+    onUnassign(playerId)
     onClose()
   }
   

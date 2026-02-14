@@ -1,15 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { Share2, Check, Link2, MessageCircle, X } from 'lucide-react'
-import { Storage } from '../../utils/storage'
 import { formatDate } from '../../utils/dateUtils'
 
-function ShareButton({ matchId }) {
+function ShareButton({ matchId, match }) {
   const [showMenu, setShowMenu] = useState(false)
   const [copied, setCopied] = useState(false)
   const menuRef = useRef(null)
   
-  // Get match data for the share message
-  const match = Storage.getMatches()[matchId]
+  // Get match data for the share message (match is now passed as prop)
   const shortCode = match?.codigoCorto || ''
   const shareUrl = shortCode 
     ? `${window.location.origin}${window.location.pathname}#/p/${shortCode}`

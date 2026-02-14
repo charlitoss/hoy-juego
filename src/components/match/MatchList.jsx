@@ -1,42 +1,20 @@
-import { useState, useEffect, useCallback } from 'react'
 import { Plus } from 'lucide-react'
-import { Storage } from '../../utils/storage'
+import { useQuery } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import MatchCard from './MatchCard'
 
 export default function MatchList({ onNavigate }) {
-  const [matches, setMatches] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  const loadMatches = useCallback(() => {
-    setLoading(true)
-    try {
-      const allMatches = Storage.getMatches()
-      // Sort by date (newest first)
-      const sortedMatches = Object.values(allMatches).sort((a, b) => {
-        return new Date(b.createdAt) - new Date(a.createdAt)
-      })
-      setMatches(sortedMatches)
-    } catch (error) {
-      console.error('Error loading matches:', error)
-      setMatches([])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadMatches()
-  }, [loadMatches])
+  const matches = useQuery(api.matches.list)
 
   const handleCreateNew = () => {
     onNavigate('#/crear')
   }
 
   const handleSelectMatch = (match) => {
-    onNavigate(`#/partido/${match.id}`)
+    onNavigate(`#/partido/${match._id}`)
   }
 
-  if (loading) {
+  if (matches === undefined) {
     return (
       <div className="match-list-container">
         <div className="loading">Cargando partidos...</div>
@@ -67,7 +45,7 @@ export default function MatchList({ onNavigate }) {
         <div className="matches-grid">
           {matches.map(match => (
             <MatchCard
-              key={match.id}
+              key={match._id}
               match={match}
               onClick={() => handleSelectMatch(match)}
             />

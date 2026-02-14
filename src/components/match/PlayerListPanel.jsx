@@ -43,11 +43,12 @@ function PlayerListPanel({
   
   // Render unassigned player item
   const renderUnassignedPlayer = (player) => {
-    const state = getPhysicalState(player.id)
+    const playerId = player._id || player.id
+    const state = getPhysicalState(playerId)
     
     return (
       <div 
-        key={player.id} 
+        key={playerId} 
         className="player-list-item unassigned"
         onClick={() => onAssignPlayer(player)}
       >
@@ -83,12 +84,13 @@ function PlayerListPanel({
     const player = assignment.player
     if (!player) return null
     
-    const state = getPhysicalState(player.id)
+    const playerId = player._id || player.id
+    const state = getPhysicalState(playerId)
     const teamLabel = team === 'blanco' ? teamConfig.nombreEquipoBlanco : teamConfig.nombreEquipoOscuro
     
     return (
       <div 
-        key={player.id} 
+        key={playerId} 
         className={`player-list-item assigned team-${team}`}
         onClick={() => onAssignPlayer(player)}
       >
@@ -123,7 +125,7 @@ function PlayerListPanel({
             className="btn-remove"
             onClick={(e) => {
               e.stopPropagation()
-              onUnassign(player.id)
+              onUnassign(playerId)
             }}
             title="Quitar del equipo"
           >

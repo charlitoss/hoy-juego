@@ -1,14 +1,15 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { ConvexProvider, ConvexReactClient } from 'convex/react'
 import App from './App'
 import './styles/global.css'
-import { initSampleData } from './utils/initSampleData'
 
-// Initialize sample data on first load
-initSampleData()
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL)
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <ConvexProvider client={convex}>
+      <App />
+    </ConvexProvider>
   </React.StrictMode>
 )

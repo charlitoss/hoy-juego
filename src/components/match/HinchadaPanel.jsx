@@ -16,8 +16,9 @@ function HinchadaPanel({ hinchada, players }) {
           const player = players[reg.jugadorId]
           if (!player) return null
           
+          const playerId = player._id || player.id
           return (
-            <span key={player.id} className="hinchada-name">
+            <span key={playerId} className="hinchada-name">
               {player.nombre}{index < hinchada.length - 1 ? ', ' : ''}
             </span>
           )

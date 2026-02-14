@@ -564,6 +564,80 @@ h4 { font-size: var(--type-lg); }
 }
 
 /* ===================================
+   Landing Page
+   =================================== */
+
+.landing-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-0);
+}
+
+.landing-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-6);
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.hero-content {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.hero-title {
+  font-size: var(--type-3xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+  letter-spacing: var(--tracking-tight);
+}
+
+.hero-subtitle {
+  font-size: var(--type-md);
+  color: var(--text-secondary);
+  line-height: var(--leading-normal);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.hero-form-container {
+  width: 100%;
+}
+
+.hero-form {
+  background: var(--surface-1);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  border: var(--border-subtle);
+}
+
+@media (max-width: 480px) {
+  .landing-hero {
+    padding: var(--space-6) var(--space-4);
+  }
+  
+  .hero-title {
+    font-size: var(--type-2xl);
+  }
+  
+  .hero-subtitle {
+    font-size: var(--type-base);
+  }
+  
+  .hero-form {
+    padding: var(--space-5);
+  }
+}
+
+/* ===================================
    Create Match Form
    =================================== */
 

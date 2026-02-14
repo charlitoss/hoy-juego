@@ -138,10 +138,13 @@ function getPreferredRole(player) {
 export function generateBalancedTeams(players, registrations, playersPerTeam) {
   // Create player data with effective levels based on their preferred position
   const playerData = players.map(player => {
-    const registration = registrations.find(r => r.jugadorId === player.id)
+    // Support both _id (Convex) and id (legacy) formats
+    const playerId = player._id || player.id
+    const registration = registrations.find(r => r.jugadorId === playerId)
     const preferredRole = getPreferredRole(player)
     return {
       player,
+      playerId,
       registration,
       // Calculate level based on their preferred position's attributes
       effectiveLevel: calculateEffectiveLevel(player, registration, preferredRole),
@@ -219,7 +222,7 @@ export function generateBalancedTeams(players, registrations, playersPerTeam) {
     roleCounts[team][p.role]++
     
     assignments.push({
-      jugadorId: p.player.id,
+      jugadorId: p.playerId,
       equipo: team,
       rol: p.role,
       coordenadaX: position.x,

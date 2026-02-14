@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { ArrowLeft, Calendar, Clock, MapPin, Users, Edit2, Check, X, UserPlus } from 'lucide-react'
+import { useMutation } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import ShareButton from '../ui/ShareButton'
 import Countdown from '../ui/Countdown'
-import { Storage } from '../../utils/storage'
 import { formatDate } from '../../utils/dateUtils'
 
 function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlayersPerTeamChange }) {
   const [editingField, setEditingField] = useState(null)
   const [editValue, setEditValue] = useState('')
+  
+  const updateMatch = useMutation(api.matches.update)
   
   const dateInfo = formatDate(match.fecha)
   
@@ -21,7 +24,7 @@ function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlay
     setEditValue('')
   }
   
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editValue.trim() && editingField !== 'detallesUbicacion') {
       cancelEdit()
       return
@@ -31,23 +34,31 @@ function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlay
       ? parseInt(editValue, 10) 
       : editValue.trim()
     
-    const updatedMatch = {
-      ...match,
-      [editingField]: newValue
-    }
-    
-    Storage.saveMatch(updatedMatch)
-    
-    // If players per team changed and we have a handler, call it
-    if (editingField === 'jugadoresPorEquipo' && onPlayersPerTeamChange) {
-      const oldValue = match.jugadoresPorEquipo
-      if (newValue < oldValue) {
-        // Notify parent to handle excess players
-        onPlayersPerTeamChange(newValue, oldValue)
+    try {
+      await updateMatch({
+        matchId: match._id,
+        [editingField]: newValue,
+      })
+      
+      const updatedMatch = {
+        ...match,
+        [editingField]: newValue
       }
+      
+      // If players per team changed and we have a handler, call it
+      if (editingField === 'jugadoresPorEquipo' && onPlayersPerTeamChange) {
+        const oldValue = match.jugadoresPorEquipo
+        if (newValue < oldValue) {
+          // Notify parent to handle excess players
+          onPlayersPerTeamChange(newValue, oldValue)
+        }
+      }
+      
+      onMatchUpdate(updatedMatch)
+    } catch (err) {
+      console.error('Error updating match:', err)
     }
     
-    onMatchUpdate(updatedMatch)
     cancelEdit()
   }
   
@@ -255,7 +266,7 @@ function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlay
             <UserPlus size={18} />
           </button>
         )}
-        <ShareButton matchId={match.id} />
+        <ShareButton matchId={match._id} match={match} />
       </div>
       
       <div className="match-header-info editable-info">

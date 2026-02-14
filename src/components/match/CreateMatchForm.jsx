@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
+import { useMutation } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import { PLAYER_COUNTS } from '../../utils/constants'
-import { Storage } from '../../utils/storage'
 import { getTodayString } from '../../utils/dateUtils'
 
 export default function CreateMatchForm({ onNavigate }) {
@@ -15,8 +16,10 @@ export default function CreateMatchForm({ onNavigate }) {
   })
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  const createMatch = useMutation(api.matches.create)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     
@@ -44,37 +47,20 @@ export default function CreateMatchForm({ onNavigate }) {
     setIsSubmitting(true)
 
     try {
-      const matchId = Storage.generateId()
-      const existingMatches = Storage.getMatches()
-      const codigoCorto = Storage.generateUniqueShortCode(existingMatches)
-      
-      const match = {
-        id: matchId,
-        codigoCorto: codigoCorto,
+      const matchId = await createMatch({
         nombre: formData.nombre.trim(),
         fecha: formData.fecha,
         horario: formData.horario,
         ubicacion: formData.ubicacion.trim(),
-        detallesUbicacion: formData.detallesUbicacion.trim(),
+        detallesUbicacion: formData.detallesUbicacion.trim() || undefined,
         cantidadJugadores: formData.cantidadJugadores,
         jugadoresPorEquipo: formData.cantidadJugadores / 2,
-        pasoActual: 'inscripcion',
-        linkCompartible: `${window.location.origin}${window.location.pathname}#/p/${codigoCorto}`,
         organizadorId: 'current_user',
         organizadorNombre: 'Organizador',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
+      })
       
-      const saved = Storage.saveMatch(match)
-      
-      if (saved) {
-        // Navigate to the new match
-        onNavigate(`#/partido/${matchId}`)
-      } else {
-        setError('Error al guardar el partido. Por favor intenta de nuevo.')
-        setIsSubmitting(false)
-      }
+      // Navigate to the new match
+      onNavigate(`#/partido/${matchId}`)
     } catch (err) {
       setError('Error al crear el partido. Por favor intenta de nuevo.')
       setIsSubmitting(false)

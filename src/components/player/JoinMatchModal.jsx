@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { X, UserPlus, Users, Clock, Eye } from 'lucide-react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import Modal from '../ui/Modal'
 import { PHYSICAL_STATES } from '../../utils/constants'
-import { Storage } from '../../utils/storage'
 
 const REGISTRATION_TYPES = {
   jugador: { label: 'Jugador', icon: Users, description: 'Jugar en el partido' },
@@ -24,38 +25,54 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   
+  // Convex queries
+  const registrations = useQuery(api.registrations.listByMatch, isOpen && matchId ? { matchId } : "skip")
+  const playersData = useQuery(api.players.list)
+  const teamConfig = useQuery(api.teamConfigurations.getByMatch, isOpen && matchId ? { matchId } : "skip")
+  
+  // Convex mutations
+  const createPlayer = useMutation(api.players.create)
+  const createRegistration = useMutation(api.registrations.create)
+  
+  // Convert players array to object for easy lookup
+  const allPlayers = useMemo(() => {
+    if (!playersData) return {}
+    return playersData.reduce((acc, player) => {
+      acc[player._id] = player
+      return acc
+    }, {})
+  }, [playersData])
+  
   // Calculate available spots
-  const [spotsInfo, setSpotsInfo] = useState({ jugadores: 0, suplentes: 0, cupoTotal: 0, maxSuplentes: 0 })
+  const spotsInfo = useMemo(() => {
+    if (!registrations || !match) {
+      return { jugadores: 0, suplentes: 0, cupoTotal: 10, maxSuplentes: 5 }
+    }
+    
+    const suplentes = registrations.filter(r => r.tipoInscripcion === 'suplente').length
+    const cupoTotal = match.jugadoresPorEquipo * 2
+    const maxSuplentes = Math.floor(cupoTotal / 2)
+    
+    let jugadores
+    if (playerOnly) {
+      // In team builder mode, check team assignments instead of registrations
+      jugadores = teamConfig?.asignaciones?.length || 0
+    } else {
+      jugadores = registrations.filter(r => r.tipoInscripcion !== 'suplente' && r.tipoInscripcion !== 'hinchada').length
+    }
+    
+    return { jugadores, suplentes, cupoTotal, maxSuplentes }
+  }, [registrations, match, playerOnly, teamConfig])
   
   useEffect(() => {
     if (isOpen && matchId) {
-      const registrations = Storage.getRegistrations(matchId)
-      const suplentes = registrations.filter(r => r.tipoInscripcion === 'suplente').length
-      
-      const matches = Storage.getMatches()
-      const currentMatch = matches[matchId]
-      const cupoTotal = currentMatch ? currentMatch.jugadoresPorEquipo * 2 : 10
-      const maxSuplentes = Math.floor(cupoTotal / 2)
-      
-      let jugadores
-      if (playerOnly) {
-        // In team builder mode, check team assignments instead of registrations
-        // This allows adding new players when spots are freed up by unassigning
-        const teamConfig = Storage.getTeamConfig(matchId)
-        jugadores = teamConfig?.asignaciones?.length || 0
-      } else {
-        jugadores = registrations.filter(r => r.tipoInscripcion !== 'suplente' && r.tipoInscripcion !== 'hinchada').length
-      }
-      
-      setSpotsInfo({ jugadores, suplentes, cupoTotal, maxSuplentes })
-      
       // If playerOnly mode, always set to jugador
       if (playerOnly) {
         setTipoInscripcion('jugador')
       } else {
         // Auto-select type based on availability
-        if (jugadores >= cupoTotal) {
-          if (suplentes >= maxSuplentes) {
+        if (spotsInfo.jugadores >= spotsInfo.cupoTotal) {
+          if (spotsInfo.suplentes >= spotsInfo.maxSuplentes) {
             setTipoInscripcion('hinchada')
           } else {
             setTipoInscripcion('suplente')
@@ -65,7 +82,7 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
         }
       }
     }
-  }, [isOpen, matchId, playerOnly])
+  }, [isOpen, matchId, playerOnly, spotsInfo])
   
   // Check if type is available
   const isTypeAvailable = (type) => {
@@ -90,8 +107,6 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
       return
     }
     
-    const existingRegistrations = Storage.getRegistrations(matchId)
-    const allPlayers = Storage.getPlayers()
     const errors = []
     const newFriends = []
     
@@ -122,9 +137,9 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
         p => p.nombre.toLowerCase() === name.toLowerCase()
       )
       
-      if (existingPlayer) {
-        const alreadyRegistered = existingRegistrations.some(
-          r => r.jugadorId === existingPlayer.id
+      if (existingPlayer && registrations) {
+        const alreadyRegistered = registrations.some(
+          r => r.jugadorId === existingPlayer._id
         )
         if (alreadyRegistered) {
           errors.push(`"${name}" ya está inscrito en el partido`)
@@ -160,7 +175,7 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
   }
   
   // Submit main player + friends
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError('')
     
     // Validate main player name
@@ -176,15 +191,13 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
     }
     
     // Check if main player already registered
-    const existingRegistrations = Storage.getRegistrations(matchId)
-    const allPlayers = Storage.getPlayers()
     const existingMainPlayer = Object.values(allPlayers).find(
       p => p.nombre.toLowerCase() === trimmedName.toLowerCase()
     )
     
-    if (existingMainPlayer) {
-      const alreadyRegistered = existingRegistrations.some(
-        r => r.jugadorId === existingMainPlayer.id
+    if (existingMainPlayer && registrations) {
+      const alreadyRegistered = registrations.some(
+        r => r.jugadorId === existingMainPlayer._id
       )
       if (alreadyRegistered) {
         setError('Ya estás inscrito en este partido')
@@ -201,22 +214,15 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
     setIsSubmitting(true)
     
     try {
-      const players = { ...allPlayers }
-      
       // Calculate how many spots are available for jugadores
       const availableJugadorSpots = spotsInfo.cupoTotal - spotsInfo.jugadores
-      const totalToRegister = 1 + friends.length // main player + friends
       
       // 1. Register main player
-      let mainPlayer = Object.values(players).find(
-        p => p.nombre.toLowerCase() === trimmedName.toLowerCase()
-      )
+      let mainPlayerId = existingMainPlayer?._id
       
-      if (!mainPlayer) {
-        mainPlayer = {
-          id: Storage.generateId(),
+      if (!mainPlayerId) {
+        mainPlayerId = await createPlayer({
           nombre: trimmedName,
-          avatar: null,
           perfilPermanente: {
             posicionPreferida: 'Mediocampista',
             posicionesSecundarias: [],
@@ -230,37 +236,32 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
             },
             nivelGeneral: 5
           }
-        }
-        Storage.savePlayer(mainPlayer)
-        players[mainPlayer.id] = mainPlayer
+        })
       }
       
       // Main player always gets their selected type
-      const mainRegistration = {
-        jugadorId: mainPlayer.id,
+      await createRegistration({
         partidoId: matchId,
+        jugadorId: mainPlayerId,
         estadoFisico: tipoInscripcion === 'hinchada' ? 'normal' : estadoFisico,
         tipoInscripcion: tipoInscripcion,
-        timestamp: new Date().toISOString(),
         confirmado: true,
         asistira: true
-      }
-      Storage.saveRegistration(mainRegistration)
+      })
       
       // Track how many jugador spots we've used (1 for main player if they're jugador)
       let jugadorSpotsUsed = tipoInscripcion === 'jugador' ? 1 : 0
       
       // 2. Register friends - overflow goes to suplentes if registering as jugador
-      friends.forEach((friend, index) => {
-        let friendPlayer = Object.values(players).find(
+      for (let i = 0; i < friends.length; i++) {
+        const friend = friends[i]
+        let friendPlayerId = Object.values(allPlayers).find(
           p => p.nombre.toLowerCase() === friend.nombre.toLowerCase()
-        )
+        )?._id
         
-        if (!friendPlayer) {
-          friendPlayer = {
-            id: Storage.generateId(),
+        if (!friendPlayerId) {
+          friendPlayerId = await createPlayer({
             nombre: friend.nombre,
-            avatar: null,
             perfilPermanente: {
               posicionPreferida: 'Mediocampista',
               posicionesSecundarias: [],
@@ -274,9 +275,7 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
               },
               nivelGeneral: 5
             }
-          }
-          Storage.savePlayer(friendPlayer)
-          players[friendPlayer.id] = friendPlayer
+          })
         }
         
         // Determine registration type for this friend
@@ -291,17 +290,15 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
           }
         }
         
-        const friendRegistration = {
-          jugadorId: friendPlayer.id,
+        await createRegistration({
           partidoId: matchId,
+          jugadorId: friendPlayerId,
           estadoFisico: 'normal',
           tipoInscripcion: friendType,
-          timestamp: new Date(Date.now() + index + 1).toISOString(),
           confirmado: true,
           asistira: true
-        }
-        Storage.saveRegistration(friendRegistration)
-      })
+        })
+      }
       
       // Reset and close
       setNombre('')
@@ -313,11 +310,12 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
       
       if (onJoined) {
         // Pass the main player ID so the caller can auto-assign if needed
-        onJoined(mainPlayer.id)
+        onJoined(mainPlayerId)
       }
       
       onClose()
     } catch (err) {
+      console.error('Error registering:', err)
       setError('Error al inscribir. Por favor intenta de nuevo.')
       setIsSubmitting(false)
     }

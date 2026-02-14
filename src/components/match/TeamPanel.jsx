@@ -67,11 +67,12 @@ function TeamPanel({
     const player = assignment.player
     if (!player) return null
     
-    const state = getPhysicalState(player.id)
+    const playerId = player._id || player.id
+    const state = getPhysicalState(playerId)
     
     return (
       <div 
-        key={player.id} 
+        key={playerId} 
         className={`team-panel-player team-${team}`}
       >
         <div className="team-panel-player-info">
@@ -91,7 +92,7 @@ function TeamPanel({
             </button>
             <button 
               className="btn-icon-sm btn-remove-sm"
-              onClick={() => onUnassign(player.id)}
+              onClick={() => onUnassign(playerId)}
               title="Quitar del equipo"
             >
               <X size={14} />

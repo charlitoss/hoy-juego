@@ -1,51 +1,35 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import EditableMatchHeader from './EditableMatchHeader'
 import InscriptionStep from './InscriptionStep'
 import TeamBuilderStep from './TeamBuilderStep'
 import JoinMatchModal from '../player/JoinMatchModal'
-import { Storage } from '../../utils/storage'
 
 function MatchPage({ matchId, onNavigate }) {
-  const [match, setMatch] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const teamBuilderAddPlayerRef = useRef(null)
+  
+  // Convex queries
+  const match = useQuery(api.matches.getById, { matchId })
+  const registrations = useQuery(api.registrations.listByMatch, { matchId })
+  const teamConfig = useQuery(api.teamConfigurations.getByMatch, { matchId })
+  
+  // Convex mutations
+  const saveTeamConfig = useMutation(api.teamConfigurations.save)
+  const removeRegistration = useMutation(api.registrations.remove)
   
   useEffect(() => {
     setShowJoinModal(false)  // Reset modal state on navigation
     teamBuilderAddPlayerRef.current = null  // Reset handler on navigation
-    loadMatch()
   }, [matchId])
   
-  const loadMatch = () => {
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const matches = Storage.getMatches()
-      const foundMatch = matches[matchId]
-      
-      if (!foundMatch) {
-        setError('Partido no encontrado')
-        setMatch(null)
-      } else {
-        setMatch(foundMatch)
-      }
-    } catch (err) {
-      setError('Error al cargar el partido')
-    } finally {
-      setLoading(false)
-    }
-  }
-  
   const handleContinueToTeamBuilder = () => {
-    // Reload match to get updated state
-    loadMatch()
+    // Data will auto-refresh via Convex
   }
   
   const handleMatchUpdate = (updatedMatch) => {
-    setMatch(updatedMatch)
+    // Data will auto-refresh via Convex
   }
   
   const handleBack = () => {
@@ -70,19 +54,13 @@ function MatchPage({ matchId, onNavigate }) {
   }, [])
   
   const handlePlayerJoined = () => {
-    loadMatch()
+    // Data will auto-refresh via Convex
   }
   
   // Handle when players per team is reduced - remove excess players using LIFO
-  const handlePlayersPerTeamChange = (newPlayersPerTeam, oldPlayersPerTeam) => {
+  const handlePlayersPerTeamChange = async (newPlayersPerTeam, oldPlayersPerTeam) => {
     if (newPlayersPerTeam >= oldPlayersPerTeam) return
-    
-    // Get current team config
-    const teamConfig = Storage.getTeamConfig(match.id)
-    if (!teamConfig || !teamConfig.asignaciones) return
-    
-    // Get registrations to sort by timestamp
-    const registrations = Storage.getRegistrations(match.id)
+    if (!teamConfig || !teamConfig.asignaciones || !registrations) return
     
     // Track players to remove from the match entirely
     const playersToRemove = []
@@ -123,19 +101,18 @@ function MatchPage({ matchId, onNavigate }) {
     })
     
     // Remove registrations for players being removed from the match
-    playersToRemove.forEach(playerId => {
-      Storage.deleteRegistration(match.id, playerId)
-    })
+    for (const playerId of playersToRemove) {
+      await removeRegistration({ matchId, playerId })
+    }
     
     // Save updated config
-    const updatedConfig = {
-      ...teamConfig,
+    await saveTeamConfig({
+      partidoId: matchId,
       asignaciones: updatedAssignments
-    }
-    Storage.saveTeamConfig(updatedConfig)
+    })
   }
   
-  if (loading) {
+  if (match === undefined) {
     return (
       <div className="match-page">
         <div className="loading">Cargando partido...</div>
@@ -143,12 +120,12 @@ function MatchPage({ matchId, onNavigate }) {
     )
   }
   
-  if (error || !match) {
+  if (match === null) {
     return (
       <div className="match-page">
         <div className="error-state">
           <h3>Error</h3>
-          <p>{error || 'Partido no encontrado'}</p>
+          <p>Partido no encontrado</p>
           <button className="btn btn-primary" onClick={handleBack}>
             Volver al inicio
           </button>
@@ -196,7 +173,7 @@ function MatchPage({ matchId, onNavigate }) {
         <JoinMatchModal
           isOpen={showJoinModal}
           onClose={() => setShowJoinModal(false)}
-          matchId={match.id}
+          matchId={match._id}
           match={match}
           onJoined={handlePlayerJoined}
         />
