@@ -10,7 +10,6 @@ export default function LandingPage({ onNavigate }) {
     fecha: getTodayString(),
     horario: '15:00',
     ubicacion: '',
-    detallesUbicacion: '',
     cantidadJugadores: 14
   })
   const [error, setError] = useState('')
@@ -51,7 +50,6 @@ export default function LandingPage({ onNavigate }) {
         fecha: formData.fecha,
         horario: formData.horario,
         ubicacion: formData.ubicacion.trim(),
-        detallesUbicacion: formData.detallesUbicacion.trim() || undefined,
         cantidadJugadores: formData.cantidadJugadores,
         jugadoresPorEquipo: formData.cantidadJugadores / 2,
         organizadorId: 'current_user',
@@ -141,19 +139,6 @@ export default function LandingPage({ onNavigate }) {
                 placeholder="Ej: Cancha Los Pinos, Av. Libertador 1234"
                 maxLength={100}
               />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="detalles">Detalles adicionales (opcional)</label>
-              <input
-                id="detalles"
-                type="text"
-                value={formData.detallesUbicacion}
-                onChange={(e) => handleChange('detallesUbicacion', e.target.value)}
-                placeholder="Ej: Entrar por puerta trasera"
-                maxLength={200}
-              />
-              <span className="hint">Información adicional sobre cómo llegar o qué traer</span>
             </div>
 
             <div className="form-group">

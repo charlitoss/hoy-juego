@@ -18,7 +18,7 @@ function EmptySlot({ index, onClick }) {
   )
 }
 
-function InscriptionStep({ match, onContinue }) {
+function InscriptionStep({ match, onContinue, onRegisterAddPlayerHandler }) {
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [showPlayerInfo, setShowPlayerInfo] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState(null)
@@ -40,16 +40,27 @@ function InscriptionStep({ match, onContinue }) {
     }, {})
   }, [playersData])
   
-  // Filter registrations that will attend
+  // Filter registrations - only players (not suplentes or hinchada) that will attend
   const registrations = useMemo(() => {
     if (!registrationsData) return []
-    return registrationsData.filter(r => r.asistira)
+    return registrationsData.filter(r => 
+      r.asistira && 
+      r.tipoInscripcion !== 'suplente' && 
+      r.tipoInscripcion !== 'hinchada'
+    )
   }, [registrationsData])
   
   // Reset modal state when match changes
   useEffect(() => {
     setShowJoinModal(false)
   }, [match._id])
+  
+  // Register add player handler for header button
+  useEffect(() => {
+    if (onRegisterAddPlayerHandler) {
+      onRegisterAddPlayerHandler(() => setShowJoinModal(true))
+    }
+  }, [onRegisterAddPlayerHandler])
   
   // Sort registrations by timestamp (oldest first = order of inscription)
   const sortedRegistrations = useMemo(() => {
@@ -152,6 +163,7 @@ function InscriptionStep({ match, onContinue }) {
         isOpen={showJoinModal}
         onClose={() => setShowJoinModal(false)}
         matchId={match._id}
+        match={match}
         onJoined={handleJoined}
         playerOnly={!isQuotaComplete}
       />

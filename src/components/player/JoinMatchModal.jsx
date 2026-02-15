@@ -28,7 +28,6 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
   // Convex queries
   const registrations = useQuery(api.registrations.listByMatch, isOpen && matchId ? { matchId } : "skip")
   const playersData = useQuery(api.players.list)
-  const teamConfig = useQuery(api.teamConfigurations.getByMatch, isOpen && matchId ? { matchId } : "skip")
   
   // Convex mutations
   const createPlayer = useMutation(api.players.create)
@@ -43,26 +42,29 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
     }, {})
   }, [playersData])
   
-  // Calculate available spots
+  // Calculate available spots - always count from registrations
   const spotsInfo = useMemo(() => {
     if (!registrations || !match) {
       return { jugadores: 0, suplentes: 0, cupoTotal: 10, maxSuplentes: 5 }
     }
     
-    const suplentes = registrations.filter(r => r.tipoInscripcion === 'suplente').length
-    const cupoTotal = match.jugadoresPorEquipo * 2
+    const cupoTotal = match.cantidadJugadores // Total de jugadores (ya es jugadoresPorEquipo * 2)
     const maxSuplentes = Math.floor(cupoTotal / 2)
     
-    let jugadores
-    if (playerOnly) {
-      // In team builder mode, check team assignments instead of registrations
-      jugadores = teamConfig?.asignaciones?.length || 0
-    } else {
-      jugadores = registrations.filter(r => r.tipoInscripcion !== 'suplente' && r.tipoInscripcion !== 'hinchada').length
-    }
+    // Siempre contar desde registrations - jugadores son los que NO son suplente ni hinchada
+    const jugadores = registrations.filter(r => 
+      r.asistira && 
+      r.tipoInscripcion !== 'suplente' && 
+      r.tipoInscripcion !== 'hinchada'
+    ).length
+    
+    const suplentes = registrations.filter(r => 
+      r.asistira && 
+      r.tipoInscripcion === 'suplente'
+    ).length
     
     return { jugadores, suplentes, cupoTotal, maxSuplentes }
-  }, [registrations, match, playerOnly, teamConfig])
+  }, [registrations, match])
   
   useEffect(() => {
     if (isOpen && matchId) {

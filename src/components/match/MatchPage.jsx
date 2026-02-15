@@ -9,6 +9,7 @@ import JoinMatchModal from '../player/JoinMatchModal'
 function MatchPage({ matchId, onNavigate }) {
   const [showJoinModal, setShowJoinModal] = useState(false)
   const teamBuilderAddPlayerRef = useRef(null)
+  const inscriptionAddPlayerRef = useRef(null)
   
   // Convex queries
   const match = useQuery(api.matches.getById, { matchId })
@@ -22,6 +23,7 @@ function MatchPage({ matchId, onNavigate }) {
   useEffect(() => {
     setShowJoinModal(false)  // Reset modal state on navigation
     teamBuilderAddPlayerRef.current = null  // Reset handler on navigation
+    inscriptionAddPlayerRef.current = null  // Reset inscription handler
   }, [matchId])
   
   const handleContinueToTeamBuilder = () => {
@@ -42,7 +44,11 @@ function MatchPage({ matchId, onNavigate }) {
       if (teamBuilderAddPlayerRef.current) {
         teamBuilderAddPlayerRef.current()
       }
-      // If handler not registered yet, do nothing (wait for TeamBuilderStep to mount)
+    } else if (match?.pasoActual === 'inscripcion') {
+      // In inscription, use the inscription handler
+      if (inscriptionAddPlayerRef.current) {
+        inscriptionAddPlayerRef.current()
+      }
     } else {
       setShowJoinModal(true)
     }
@@ -51,6 +57,11 @@ function MatchPage({ matchId, onNavigate }) {
   // Callback to register the team builder's add player handler
   const registerTeamBuilderAddPlayer = useCallback((handler) => {
     teamBuilderAddPlayerRef.current = handler
+  }, [])
+  
+  // Callback to register the inscription's add player handler
+  const registerInscriptionAddPlayer = useCallback((handler) => {
+    inscriptionAddPlayerRef.current = handler
   }, [])
   
   const handlePlayerJoined = () => {
@@ -150,6 +161,7 @@ function MatchPage({ matchId, onNavigate }) {
         <InscriptionStep 
           match={match} 
           onContinue={handleContinueToTeamBuilder}
+          onRegisterAddPlayerHandler={registerInscriptionAddPlayer}
         />
       )}
       

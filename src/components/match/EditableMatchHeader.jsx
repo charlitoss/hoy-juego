@@ -179,40 +179,51 @@ function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlay
     )
   }
   
-  // Render editable players per team
-  const renderEditablePlayersPerTeam = () => {
-    if (editingField === 'jugadoresPorEquipo') {
-      return (
-        <div className="editable-field editing">
-          <Users size={18} />
-          <select
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            autoFocus
-            className="editable-select"
-          >
-            {[5, 6, 7, 8, 9, 10, 11].map(n => (
-              <option key={n} value={n}>{n} vs {n}</option>
-            ))}
-          </select>
-          <button className="edit-action-btn save" onClick={saveEdit}>
-            <Check size={14} />
-          </button>
-          <button className="edit-action-btn cancel" onClick={cancelEdit}>
-            <X size={14} />
-          </button>
-        </div>
-      )
-    }
+  // Handle direct select change for players per team
+  const handlePlayersPerTeamChange = async (e) => {
+    const newValue = parseInt(e.target.value, 10)
     
+    try {
+      await updateMatch({
+        matchId: match._id,
+        jugadoresPorEquipo: newValue,
+        cantidadJugadores: newValue * 2,
+      })
+      
+      const updatedMatch = {
+        ...match,
+        jugadoresPorEquipo: newValue,
+        cantidadJugadores: newValue * 2
+      }
+      
+      // If players per team changed and we have a handler, call it
+      if (onPlayersPerTeamChange) {
+        const oldValue = match.jugadoresPorEquipo
+        if (newValue < oldValue) {
+          onPlayersPerTeamChange(newValue, oldValue)
+        }
+      }
+      
+      onMatchUpdate(updatedMatch)
+    } catch (err) {
+      console.error('Error updating match:', err)
+    }
+  }
+  
+  // Render editable players per team - direct dropdown
+  const renderEditablePlayersPerTeam = () => {
     return (
-      <div 
-        className="editable-field"
-        onClick={() => startEdit('jugadoresPorEquipo', match.jugadoresPorEquipo.toString())}
-      >
+      <div className="editable-field player-count-select">
         <Users size={18} />
-        <span>{match.jugadoresPorEquipo} vs {match.jugadoresPorEquipo}</span>
-        <Edit2 size={12} className="edit-icon" />
+        <select
+          value={match.jugadoresPorEquipo}
+          onChange={handlePlayersPerTeamChange}
+          className="editable-select inline-select"
+        >
+          {[5, 6, 7, 8, 9, 10, 11].map(n => (
+            <option key={n} value={n}>{n} vs {n}</option>
+          ))}
+        </select>
       </div>
     )
   }
@@ -274,17 +285,8 @@ function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlay
         {renderEditableText('ubicacion', match.ubicacion, <MapPin size={18} />, 'Ubicación')}
         {renderEditableDate()}
         {renderEditablePlayersPerTeam()}
-        {match.detallesUbicacion && (
-          <div className="info-item">
-            <span style={{ marginLeft: '26px', fontStyle: 'italic' }}>
-              {match.detallesUbicacion}
-            </span>
-          </div>
-        )}
+        <Countdown targetDate={match.fecha} targetTime={match.horario} />
       </div>
-      
-      {/* Countdown */}
-      <Countdown targetDate={match.fecha} targetTime={match.horario} />
     </div>
   )
 }

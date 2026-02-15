@@ -24,6 +24,8 @@ export const save = mutation({
       equipo: v.string(),
       rol: v.string(),
       posicion: v.optional(v.string()),
+      coordenadaX: v.optional(v.number()),
+      coordenadaY: v.optional(v.number()),
     }))),
     formacionEquipoBlanco: v.optional(v.string()),
     formacionEquipoOscuro: v.optional(v.string()),

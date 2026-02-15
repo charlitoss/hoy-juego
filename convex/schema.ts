@@ -58,8 +58,10 @@ export default defineSchema({
     asignaciones: v.array(v.object({
       jugadorId: v.id("players"),
       equipo: v.string(), // 'blanco' | 'oscuro'
-      rol: v.string(), // 'titular' | 'suplente' | 'hinchada'
+      rol: v.string(), // 'arquero' | 'defensor' | 'medio' | 'delantero'
       posicion: v.optional(v.string()),
+      coordenadaX: v.optional(v.number()),
+      coordenadaY: v.optional(v.number()),
     })),
     formacionEquipoBlanco: v.string(),
     formacionEquipoOscuro: v.string(),

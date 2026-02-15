@@ -985,6 +985,29 @@ h4 { font-size: var(--type-lg); }
   outline: none;
 }
 
+/* Inline select for player count */
+.inline-select {
+  border: none;
+  border-bottom: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--type-sm);
+  cursor: pointer;
+  padding: 0;
+}
+
+.inline-select:hover {
+  color: var(--text-primary);
+}
+
+.player-count-select {
+  cursor: pointer;
+}
+
+.player-count-select:hover .inline-select {
+  color: var(--text-primary);
+}
+
 .edit-action-btn {
   display: flex;
   align-items: center;
@@ -1064,48 +1087,20 @@ h4 { font-size: var(--type-lg); }
   color: var(--text-secondary);
 }
 
-/* Countdown */
-.countdown {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--space-4);
-  background: linear-gradient(135deg, var(--acid-yellow), var(--acid-yellow-muted));
-  border-radius: var(--radius-lg);
-  color: var(--text-inverse);
-  margin-bottom: var(--space-4);
+/* Countdown - inline text style */
+.countdown-inline {
+  color: var(--color-primary);
 }
 
-.countdown-label {
-  font-size: var(--type-xs);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wider);
-  opacity: 0.9;
-  margin-bottom: var(--space-1);
+.countdown-inline svg {
+  color: var(--color-primary);
 }
 
-.countdown-time {
-  font-size: var(--type-xl);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.countdown-days {
-  font-weight: 600;
-}
-
-.countdown-hms {
+.countdown-text {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-weight: 600;
   letter-spacing: var(--tracking-wide);
-}
-
-@media (max-width: 480px) {
-  .countdown-time {
-    font-size: var(--type-lg);
-  }
+  color: var(--color-primary);
 }
 
 /* Progress Bar */
