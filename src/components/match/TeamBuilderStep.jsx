@@ -148,66 +148,13 @@ function TeamBuilderStep({ match, onRegisterAddPlayerHandler }) {
     setSelectedPlayer(null)
   }
   
-  // Handle removing player from team - with suplente promotion
+  // Handle removing player from team
   const handleUnassignPlayer = async (playerId) => {
-    // Get the team the player was on
-    const removedAssignment = teamConfig.asignaciones.find(a => a.jugadorId === playerId)
-    const removedTeam = removedAssignment?.equipo
-    
     // Remove player from assignments
-    let newAssignments = teamConfig.asignaciones.filter(a => a.jugadorId !== playerId)
+    const newAssignments = teamConfig.asignaciones.filter(a => a.jugadorId !== playerId)
     
     // Remove player's registration from the match entirely
     await removeRegistration({ matchId: match._id, playerId })
-    
-    // Check if there are suplentes to promote
-    const suplentes = registrations
-      .filter(r => r.tipoInscripcion === 'suplente')
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    
-    if (suplentes.length > 0) {
-      const firstSuplente = suplentes[0]
-      
-      // Promote suplente to jugador (update registration)
-      await createRegistration({
-        partidoId: match._id,
-        jugadorId: firstSuplente.jugadorId,
-        estadoFisico: firstSuplente.estadoFisico,
-        confirmado: true,
-        asistira: true
-      })
-      
-      // Assign to the team that had the player removed (or the one with fewer players)
-      const blancoCount = newAssignments.filter(a => a.equipo === 'blanco').length
-      const oscuroCount = newAssignments.filter(a => a.equipo === 'oscuro').length
-      
-      let targetTeam = removedTeam || (blancoCount <= oscuroCount ? 'blanco' : 'oscuro')
-      
-      // Get default role based on player preference
-      const suplePlayer = players[firstSuplente.jugadorId]
-      const preferredPosition = suplePlayer?.perfilPermanente?.posicionPreferida || 'Mediocampista'
-      const roleMap = {
-        'Arquero': 'arquero',
-        'Defensor': 'defensor',
-        'Mediocampista': 'medio',
-        'Delantero': 'delantero'
-      }
-      const role = roleMap[preferredPosition] || 'medio'
-      
-      const teamAssignments = newAssignments.filter(a => a.equipo === targetTeam)
-      const roleCount = teamAssignments.filter(a => a.rol === role).length
-      const position = getDefaultPosition(role, targetTeam, roleCount)
-      
-      const newAssignment = {
-        jugadorId: firstSuplente.jugadorId,
-        equipo: targetTeam,
-        rol: role,
-        coordenadaX: position.x,
-        coordenadaY: position.y
-      }
-      
-      newAssignments = [...newAssignments, newAssignment]
-    }
     
     await saveTeamConfig({
       partidoId: match._id,
@@ -216,7 +163,7 @@ function TeamBuilderStep({ match, onRegisterAddPlayerHandler }) {
   }
   
   // Handle promoting a suplente manually
-  const handlePromoteSuplente = async (playerId) => {
+  const handlePromoteSuplente = async (playerId, targetTeamOverride = null) => {
     const suplenteReg = registrations.find(r => r.jugadorId === playerId && r.tipoInscripcion === 'suplente')
     if (!suplenteReg) return
     
@@ -229,10 +176,13 @@ function TeamBuilderStep({ match, onRegisterAddPlayerHandler }) {
       asistira: true
     })
     
-    // Assign to team with fewer players
-    const blancoCount = teamConfig.asignaciones.filter(a => a.equipo === 'blanco').length
-    const oscuroCount = teamConfig.asignaciones.filter(a => a.equipo === 'oscuro').length
-    const targetTeam = blancoCount <= oscuroCount ? 'blanco' : 'oscuro'
+    // Use override team or assign to team with fewer players
+    let targetTeam = targetTeamOverride
+    if (!targetTeam) {
+      const blancoCount = teamConfig.asignaciones.filter(a => a.equipo === 'blanco').length
+      const oscuroCount = teamConfig.asignaciones.filter(a => a.equipo === 'oscuro').length
+      targetTeam = blancoCount <= oscuroCount ? 'blanco' : 'oscuro'
+    }
     
     const player = players[playerId]
     const preferredPosition = player?.perfilPermanente?.posicionPreferida || 'Mediocampista'
@@ -270,6 +220,27 @@ function TeamBuilderStep({ match, onRegisterAddPlayerHandler }) {
       }
       return a
     })
+    
+    await saveTeamConfig({
+      partidoId: match._id,
+      asignaciones: updatedAssignments
+    })
+  }
+  
+  // Handle swapping a player to the other team
+  const handleSwapTeam = async (playerId) => {
+    const assignment = teamConfig.asignaciones.find(a => a.jugadorId === playerId)
+    if (!assignment) return
+    
+    const newTeam = assignment.equipo === 'blanco' ? 'oscuro' : 'blanco'
+    // Mirror Y position to the other half of the field
+    const newY = 100 - assignment.coordenadaY
+    
+    const updatedAssignments = teamConfig.asignaciones.map(a => 
+      a.jugadorId === playerId 
+        ? { ...a, equipo: newTeam, coordenadaY: newY }
+        : a
+    )
     
     await saveTeamConfig({
       partidoId: match._id,
@@ -417,9 +388,13 @@ function TeamBuilderStep({ match, onRegisterAddPlayerHandler }) {
           teamName={teamConfig.nombreEquipoBlanco}
           players={blancoPlayers}
           registrations={registrations}
+          suplentes={suplentes}
+          allPlayers={players}
           onViewInfo={handleViewPlayerInfo}
           onUnassign={handleUnassignPlayer}
+          onSwapTeam={handleSwapTeam}
           onAddPlayer={handleOpenJoinFromEmptySlot}
+          onPromoteSuplente={handlePromoteSuplente}
           onTeamNameChange={handleTeamNameChange}
           jugadoresPorEquipo={match.jugadoresPorEquipo}
         />
@@ -431,6 +406,7 @@ function TeamBuilderStep({ match, onRegisterAddPlayerHandler }) {
             players={players}
             registrations={registrations}
             onPositionChange={handlePositionChange}
+            onSwapTeam={handleSwapTeam}
             onPlayerClick={handleViewPlayerInfo}
           />
           
@@ -464,9 +440,13 @@ function TeamBuilderStep({ match, onRegisterAddPlayerHandler }) {
           teamName={teamConfig.nombreEquipoOscuro}
           players={oscuroPlayers}
           registrations={registrations}
+          suplentes={suplentes}
+          allPlayers={players}
           onViewInfo={handleViewPlayerInfo}
           onUnassign={handleUnassignPlayer}
+          onSwapTeam={handleSwapTeam}
           onAddPlayer={handleOpenJoinFromEmptySlot}
+          onPromoteSuplente={handlePromoteSuplente}
           onTeamNameChange={handleTeamNameChange}
           jugadoresPorEquipo={match.jugadoresPorEquipo}
         />
@@ -505,6 +485,8 @@ function TeamBuilderStep({ match, onRegisterAddPlayerHandler }) {
         }}
         player={selectedPlayer}
         registration={selectedRegistration}
+        assignment={selectedPlayer ? getAssignment(selectedPlayer._id || selectedPlayer.id) : null}
+        onSwapTeam={handleSwapTeam}
       />
       
       {/* Regenerate confirmation modal - Hidden temporarily */}

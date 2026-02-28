@@ -1919,7 +1919,7 @@ h4 { font-size: var(--type-lg); }
   flex-direction: column;
   background: var(--surface-1);
   border-radius: var(--radius-xl);
-  padding: var(--space-3);
+  padding: var(--space-4);
   box-shadow: var(--shadow-sm);
   border: var(--border-subtle);
   min-height: 0;
@@ -2023,12 +2023,12 @@ h4 { font-size: var(--type-lg); }
 
 /* Team Panel */
 .team-panel {
-  background: var(--surface-2);
+  background: var(--bg-card);
   border-radius: var(--radius-lg);
-  padding: var(--space-4);
+  padding: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: visible;
   align-self: flex-start;
   height: 100%;
   width: 100%;
@@ -2052,7 +2052,7 @@ h4 { font-size: var(--type-lg); }
 }
 
 .team-panel-title {
-  font-size: var(--type-sm);
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
@@ -2256,6 +2256,36 @@ h4 { font-size: var(--type-lg); }
 .btn-icon-sm.btn-remove-sm:hover {
   background: rgba(255,61,87,0.15);
   color: var(--semantic-error);
+}
+
+/* Swap team button */
+.btn-icon-sm.btn-swap-team {
+  color: var(--text-tertiary);
+}
+
+.btn-icon-sm.btn-swap-team:hover {
+  background: rgba(30,255,180,0.15);
+  color: var(--color-primary);
+}
+
+/* Team panel drag states */
+.team-panel.drag-over {
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+.team-panel-player.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.team-panel-player {
+  cursor: grab;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.team-panel-player:hover {
+  background: var(--surface-4);
 }
 
 .btn-assign-sm {
@@ -3514,9 +3544,8 @@ h4 { font-size: var(--type-lg); }
   background: var(--surface-2);
   border: 2px dashed rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-sm);
-  cursor: pointer;
   transition: all 0.15s;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .empty-slot:hover, .empty-team-slot:hover {
@@ -3546,6 +3575,45 @@ h4 { font-size: var(--type-lg); }
 .empty-slot:hover .empty-slot-icon,
 .empty-team-slot:hover .empty-slot-icon {
   color: var(--text-primary);
+}
+
+.empty-slot-promote-btn,
+.empty-slot-add-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 1;
+  padding: 4px 8px;
+  border: none;
+  border-radius: var(--radius-xs);
+  font-size: var(--type-xs);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.empty-slot-promote-btn {
+  background: rgba(30, 255, 180, 0.15);
+  color: var(--color-primary);
+}
+
+.empty-slot-promote-btn:hover {
+  background: rgba(30, 255, 180, 0.25);
+}
+
+.empty-slot-add-btn {
+  background: transparent;
+  color: var(--text-tertiary);
+}
+
+.empty-slot-add-btn:hover {
+  background: var(--surface-4);
+  color: var(--text-secondary);
+}
+
+.empty-slot-suplente-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ===================================

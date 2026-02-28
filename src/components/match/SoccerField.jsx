@@ -6,9 +6,11 @@ function SoccerField({
   players, 
   registrations, 
   onPositionChange,
+  onSwapTeam,
   onPlayerClick 
 }) {
   const [dragging, setDragging] = useState(null)
+  const [dragPosition, setDragPosition] = useState(null)
   const fieldRef = useRef(null)
   
   // Get initials from name
@@ -20,17 +22,6 @@ function SoccerField({
       .join('')
       .toUpperCase()
       .slice(0, 2)
-  }
-  
-  // Get role abbreviation
-  const getRoleAbbr = (role) => {
-    const abbrs = {
-      arquero: 'ARQ',
-      defensor: 'DEF',
-      medio: 'MED',
-      delantero: 'DEL'
-    }
-    return abbrs[role] || ''
   }
   
   // Drag and drop handlers
@@ -56,6 +47,20 @@ function SoccerField({
     const clampedX = Math.max(5, Math.min(95, x))
     const clampedY = Math.max(5, Math.min(95, y))
     
+    // Check if player crossed the center line (team boundary)
+    const assignment = teamConfig.asignaciones.find(a => a.jugadorId === dragging)
+    if (assignment) {
+      const wasInBlancoHalf = assignment.equipo === 'blanco'
+      const isNowInBlancoHalf = clampedY < 50
+      
+      if (wasInBlancoHalf !== isNowInBlancoHalf) {
+        // Player crossed to the other team's half - swap team
+        onSwapTeam(dragging)
+        setDragging(null)
+        return
+      }
+    }
+    
     onPositionChange(dragging, clampedX, clampedY)
     setDragging(null)
   }
@@ -65,8 +70,9 @@ function SoccerField({
   }
   
   // Touch handlers for mobile
-  const handleTouchStart = (e, playerId) => {
+  const handleTouchStart = (e, playerId, assignment) => {
     setDragging(playerId)
+    setDragPosition({ x: assignment.coordenadaX, y: assignment.coordenadaY })
   }
   
   const handleTouchMove = (e) => {
@@ -81,11 +87,33 @@ function SoccerField({
     const clampedX = Math.max(5, Math.min(95, x))
     const clampedY = Math.max(5, Math.min(95, y))
     
-    onPositionChange(dragging, clampedX, clampedY)
+    setDragPosition({ x: clampedX, y: clampedY })
   }
   
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e) => {
+    if (!dragging || !fieldRef.current || !dragPosition) {
+      setDragging(null)
+      setDragPosition(null)
+      return
+    }
+    
+    // Check if player crossed the center line during touch drag
+    const assignment = teamConfig.asignaciones.find(a => a.jugadorId === dragging)
+    if (assignment) {
+      const wasInBlancoHalf = assignment.equipo === 'blanco'
+      const isNowInBlancoHalf = dragPosition.y < 50
+      
+      if (wasInBlancoHalf !== isNowInBlancoHalf) {
+        onSwapTeam(dragging)
+        setDragging(null)
+        setDragPosition(null)
+        return
+      }
+    }
+    
+    onPositionChange(dragging, dragPosition.x, dragPosition.y)
     setDragging(null)
+    setDragPosition(null)
   }
   
   // Render player marker
@@ -98,24 +126,26 @@ function SoccerField({
     const isBlanco = assignment.equipo === 'blanco'
     const isDragging = dragging === assignment.jugadorId
     
+    const posX = isDragging && dragPosition ? dragPosition.x : assignment.coordenadaX
+    const posY = isDragging && dragPosition ? dragPosition.y : assignment.coordenadaY
+    
     return (
       <div
         key={assignment.jugadorId}
         className={`field-player ${isBlanco ? 'team-blanco' : 'team-oscuro'} ${isDragging ? 'dragging' : ''}`}
         style={{
-          left: `${assignment.coordenadaX}%`,
-          top: `${assignment.coordenadaY}%`,
+          left: `${posX}%`,
+          top: `${posY}%`,
         }}
         draggable
         onDragStart={(e) => handleDragStart(e, assignment.jugadorId)}
         onDragEnd={handleDragEnd}
-        onTouchStart={(e) => handleTouchStart(e, assignment.jugadorId)}
+        onTouchStart={(e) => handleTouchStart(e, assignment.jugadorId, assignment)}
         onClick={() => onPlayerClick(player)}
       >
         <div className="field-player-avatar">
           {getInitials(player.nombre)}
         </div>
-        <div className="field-player-role">{getRoleAbbr(assignment.rol)}</div>
         <div className="field-player-state">{physicalState.emoji}</div>
         <div className="field-player-name">{player.nombre.split(' ')[0]}</div>
       </div>

@@ -1,7 +1,8 @@
+import { ArrowLeftRight } from 'lucide-react'
 import Modal from '../ui/Modal'
 import { PHYSICAL_STATES } from '../../utils/constants'
 
-function PlayerInfoModal({ isOpen, onClose, player, registration }) {
+function PlayerInfoModal({ isOpen, onClose, player, registration, assignment, onSwapTeam }) {
   if (!player) return null
   
   const physicalState = PHYSICAL_STATES[registration?.estadoFisico] || PHYSICAL_STATES.normal
@@ -33,15 +34,38 @@ function PlayerInfoModal({ isOpen, onClose, player, registration }) {
     pase: 'Pase'
   }
   
+  const handleSwapTeam = () => {
+    if (onSwapTeam && player) {
+      const playerId = player._id || player.id
+      onSwapTeam(playerId)
+      onClose()
+    }
+  }
+  
+  const teamLabel = assignment?.equipo === 'blanco' ? 'Blanco' : 'Oscuro'
+  const otherTeamLabel = assignment?.equipo === 'blanco' ? 'Oscuro' : 'Blanco'
+  
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="Información del Jugador"
       footer={
-        <button className="btn btn-primary" onClick={onClose} style={{ flex: 1 }}>
-          Cerrar
-        </button>
+        <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+          {assignment && onSwapTeam && (
+            <button 
+              className="btn btn-secondary" 
+              onClick={handleSwapTeam}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            >
+              <ArrowLeftRight size={16} />
+              Mover a {otherTeamLabel}
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={onClose} style={{ flex: 1 }}>
+            Cerrar
+          </button>
+        </div>
       }
     >
       <div className="player-profile">
