@@ -1077,12 +1077,13 @@ h4 { font-size: var(--type-lg); }
   margin-bottom: var(--space-2);
 }
 
-.progress-text {
+.progress-title {
   font-weight: 600;
+  font-size: var(--type-base);
   color: var(--text-primary);
 }
 
-.progress-count {
+.progress-remaining {
   font-size: var(--type-sm);
   color: var(--text-secondary);
 }
@@ -1097,10 +1098,25 @@ h4 { font-size: var(--type-lg); }
 }
 
 .countdown-text {
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-family: var(--font-body);
   font-weight: 600;
-  letter-spacing: var(--tracking-wide);
   color: var(--color-primary);
+}
+
+/* Time with countdown wrapper */
+.time-with-countdown {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.time-with-countdown .countdown-inline {
+  font-size: var(--type-xs);
+}
+
+.time-with-countdown .countdown-inline svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Progress Bar */
@@ -1119,7 +1135,7 @@ h4 { font-size: var(--type-lg); }
 }
 
 .progress-bar-fill.complete {
-  background: var(--semantic-success);
+  background: var(--color-primary);
 }
 
 .progress-message {
@@ -1129,7 +1145,7 @@ h4 { font-size: var(--type-lg); }
 }
 
 .progress-message.complete {
-  color: var(--semantic-success);
+  color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -1232,11 +1248,54 @@ h4 { font-size: var(--type-lg); }
   text-decoration: underline;
 }
 
+/* Suplentes and Hinchada in Inscription */
+.inscription-extras {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+
+.inscription-extra-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.inscription-extra-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--type-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.inscription-extra-header svg {
+  color: var(--text-tertiary);
+}
+
+.inscription-extra-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-left: var(--space-5);
+}
+
+.inscription-extra-name {
+  font-size: var(--type-sm);
+  color: var(--text-secondary);
+}
+
 /* Action Buttons */
 .inscription-actions {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  margin-top: var(--space-4);
 }
 
 .btn-join {
@@ -1298,6 +1357,7 @@ h4 { font-size: var(--type-lg); }
 .btn-continue.ready:hover {
   background: var(--color-primary-light);
   box-shadow: var(--shadow-accent);
+  color: var(--text-inverse);
 }
 
 .continue-hint {
@@ -1984,11 +2044,11 @@ h4 { font-size: var(--type-lg); }
 }
 
 .team-panel-header.team-blanco {
-  border-bottom-color: var(--acid-yellow);
+  border-bottom-color: #FFFFFF;
 }
 
 .team-panel-header.team-oscuro {
-  border-bottom-color: var(--text-primary);
+  border-bottom-color: #0D0D0D;
 }
 
 .team-panel-title {
@@ -2102,17 +2162,17 @@ h4 { font-size: var(--type-lg); }
   justify-content: space-between;
   padding: 8px 10px;
   background: var(--surface-3);
-  border-radius: var(--radius-sm);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   border-left: 3px solid transparent;
   transition: all var(--duration-fast);
 }
 
 .team-panel-player.team-blanco {
-  border-left-color: var(--acid-yellow);
+  border-left-color: #FFFFFF;
 }
 
 .team-panel-player.team-oscuro {
-  border-left-color: var(--text-primary);
+  border-left-color: #0D0D0D;
 }
 
 .team-panel-player.unassigned {
@@ -3341,16 +3401,26 @@ h4 { font-size: var(--type-lg); }
 
 .friend-input {
   flex: 1;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  font-family: inherit;
-  font-size: 0.875rem;
+  padding: 0 var(--space-4);
+  height: 44px;
+  background: var(--surface-2);
+  border: var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--type-sm);
+  outline: none;
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.friend-input::placeholder {
+  color: var(--text-tertiary);
 }
 
 .friend-input:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: rgba(30,255,180,0.50);
+  box-shadow: 0 0 0 3px rgba(30,255,180,0.08);
 }
 
 .btn-add-friend {
@@ -3486,7 +3556,8 @@ h4 { font-size: var(--type-lg); }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
   height: 36px;
   border-radius: var(--radius-md);
   background: var(--acid-yellow);
@@ -3495,6 +3566,8 @@ h4 { font-size: var(--type-lg); }
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-in-out);
   flex-shrink: 0;
+  font-size: var(--type-sm);
+  font-weight: 600;
 }
 
 .btn-add-player:hover {

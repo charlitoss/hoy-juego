@@ -151,7 +151,6 @@ function MatchPage({ matchId, onNavigate }) {
       <EditableMatchHeader 
         match={match}
         onMatchUpdate={handleMatchUpdate}
-        onBack={handleBack}
         onAddPlayer={handleAddPlayer}
         onPlayersPerTeamChange={handlePlayersPerTeamChange}
       />
@@ -168,7 +167,6 @@ function MatchPage({ matchId, onNavigate }) {
       {match.pasoActual === 'armado_equipos' && (
         <TeamBuilderStep 
           match={match}
-          onBack={handleBack}
           onRegisterAddPlayerHandler={registerTeamBuilderAddPlayer}
         />
       )}

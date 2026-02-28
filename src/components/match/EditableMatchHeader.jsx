@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { ArrowLeft, Calendar, Clock, MapPin, Users, Edit2, Check, X, UserPlus } from 'lucide-react'
+import { Calendar, Clock, MapPin, Users, Edit2, Check, X, UserPlus } from 'lucide-react'
 import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import ShareButton from '../ui/ShareButton'
 import Countdown from '../ui/Countdown'
 import { formatDate } from '../../utils/dateUtils'
 
-function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlayersPerTeamChange }) {
+function EditableMatchHeader({ match, onMatchUpdate, onAddPlayer, onPlayersPerTeamChange }) {
   const [editingField, setEditingField] = useState(null)
   const [editValue, setEditValue] = useState('')
   
@@ -143,7 +143,7 @@ function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlay
     )
   }
   
-  // Render editable time
+  // Render editable time with countdown
   const renderEditableTime = () => {
     if (editingField === 'horario') {
       return (
@@ -168,13 +168,16 @@ function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlay
     }
     
     return (
-      <div 
-        className="editable-field"
-        onClick={() => startEdit('horario', match.horario)}
-      >
-        <Clock size={18} />
-        <span>{match.horario}</span>
-        <Edit2 size={12} className="edit-icon" />
+      <div className="time-with-countdown">
+        <div 
+          className="editable-field"
+          onClick={() => startEdit('horario', match.horario)}
+        >
+          <Clock size={18} />
+          <span>{match.horario}</span>
+          <Edit2 size={12} className="edit-icon" />
+        </div>
+        <Countdown targetDate={match.fecha} targetTime={match.horario} />
       </div>
     )
   }
@@ -268,13 +271,11 @@ function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlay
   return (
     <div className="match-header">
       <div className="match-header-top">
-        <button className="back-btn" onClick={onBack}>
-          <ArrowLeft size={20} />
-        </button>
         {renderEditableTitle()}
         {onAddPlayer && (
           <button className="btn-add-player" onClick={onAddPlayer} title="Agregar jugador">
             <UserPlus size={18} />
+            <span>Anotarse</span>
           </button>
         )}
         <ShareButton matchId={match._id} match={match} />
@@ -285,7 +286,6 @@ function EditableMatchHeader({ match, onMatchUpdate, onBack, onAddPlayer, onPlay
         {renderEditableText('ubicacion', match.ubicacion, <MapPin size={18} />, 'Ubicación')}
         {renderEditableDate()}
         {renderEditablePlayersPerTeam()}
-        <Countdown targetDate={match.fecha} targetTime={match.horario} />
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { UserPlus, ArrowRight, Plus } from 'lucide-react'
+import { ArrowRight, Plus, Clock, Eye } from 'lucide-react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import ProgressBar from '../ui/ProgressBar'
@@ -48,6 +48,17 @@ function InscriptionStep({ match, onContinue, onRegisterAddPlayerHandler }) {
       r.tipoInscripcion !== 'suplente' && 
       r.tipoInscripcion !== 'hinchada'
     )
+  }, [registrationsData])
+  
+  // Get suplentes and hinchada
+  const suplentes = useMemo(() => {
+    if (!registrationsData) return []
+    return registrationsData.filter(r => r.asistira && r.tipoInscripcion === 'suplente')
+  }, [registrationsData])
+  
+  const hinchada = useMemo(() => {
+    if (!registrationsData) return []
+    return registrationsData.filter(r => r.asistira && r.tipoInscripcion === 'hinchada')
   }, [registrationsData])
   
   // Reset modal state when match changes
@@ -109,10 +120,6 @@ function InscriptionStep({ match, onContinue, onRegisterAddPlayerHandler }) {
       />
       
       <div className="player-list-section">
-        <div className="player-list-header">
-          <h3>Jugadores ({confirmedCount}/{requiredCount})</h3>
-        </div>
-        
         <div className="player-list compact-list">
           {/* Jugadores confirmados */}
           {sortedRegistrations.map((registration, index) => {
@@ -142,6 +149,51 @@ function InscriptionStep({ match, onContinue, onRegisterAddPlayerHandler }) {
         </div>
       </div>
       
+      {/* Suplentes and Hinchada sections */}
+      {(suplentes.length > 0 || hinchada.length > 0) && (
+        <div className="inscription-extras">
+          {suplentes.length > 0 && (
+            <div className="inscription-extra-section">
+              <div className="inscription-extra-header">
+                <Clock size={14} />
+                <span>Suplentes ({suplentes.length})</span>
+              </div>
+              <div className="inscription-extra-list">
+                {suplentes.map((reg, index) => {
+                  const player = players[reg.jugadorId]
+                  if (!player) return null
+                  return (
+                    <span key={reg.jugadorId} className="inscription-extra-name">
+                      {index + 1}. {player.nombre}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          
+          {hinchada.length > 0 && (
+            <div className="inscription-extra-section">
+              <div className="inscription-extra-header">
+                <Eye size={14} />
+                <span>Hinchada ({hinchada.length})</span>
+              </div>
+              <div className="inscription-extra-list">
+                {hinchada.map((reg, index) => {
+                  const player = players[reg.jugadorId]
+                  if (!player) return null
+                  return (
+                    <span key={reg.jugadorId} className="inscription-extra-name">
+                      {player.nombre}{index < hinchada.length - 1 ? ', ' : ''}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="inscription-actions">
         <button 
           className={`btn-continue ${isQuotaComplete ? 'ready' : ''}`}
@@ -165,7 +217,7 @@ function InscriptionStep({ match, onContinue, onRegisterAddPlayerHandler }) {
         matchId={match._id}
         match={match}
         onJoined={handleJoined}
-        playerOnly={!isQuotaComplete}
+        playerOnly={false}
       />
       
       <PlayerInfoModal

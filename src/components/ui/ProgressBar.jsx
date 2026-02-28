@@ -6,8 +6,10 @@ function ProgressBar({ current, total, showMessage = true }) {
   return (
     <div className="progress-section">
       <div className="progress-header">
-        <span className="progress-text">Progreso</span>
-        <span className="progress-count">{current}/{total} jugadores</span>
+        <span className="progress-title">Jugadores {current}/{total}</span>
+        {!isComplete && (
+          <span className="progress-remaining">Faltan {remaining}</span>
+        )}
       </div>
       <div className="progress-bar">
         <div 
@@ -15,12 +17,9 @@ function ProgressBar({ current, total, showMessage = true }) {
           style={{ width: `${percentage}%` }}
         />
       </div>
-      {showMessage && (
-        <p className={`progress-message ${isComplete ? 'complete' : ''}`}>
-          {isComplete 
-            ? '¡Cupo completo! Puedes continuar al armado de equipos'
-            : `Faltan ${remaining} jugador${remaining !== 1 ? 'es' : ''} para continuar`
-          }
+      {showMessage && isComplete && (
+        <p className="progress-message complete">
+          ¡Cupo completo! Puedes continuar al armado de equipos
         </p>
       )}
     </div>

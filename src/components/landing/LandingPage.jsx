@@ -10,7 +10,7 @@ export default function LandingPage({ onNavigate }) {
     fecha: getTodayString(),
     horario: '15:00',
     ubicacion: '',
-    cantidadJugadores: 14
+    cantidadJugadores: 12
   })
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
