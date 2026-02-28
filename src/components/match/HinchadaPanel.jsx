@@ -12,15 +12,16 @@ function HinchadaPanel({ hinchada, players }) {
         <span>Hinchada ({hinchada.length})</span>
       </div>
       <div className="hinchada-list">
-        {hinchada.map((reg, index) => {
+        {hinchada.map((reg) => {
           const player = players[reg.jugadorId]
           if (!player) return null
           
           const playerId = player._id || player.id
           return (
-            <span key={playerId} className="hinchada-name">
-              {player.nombre}{index < hinchada.length - 1 ? ', ' : ''}
-            </span>
+            <div key={playerId} className="hinchada-item">
+              <Eye size={14} className="hinchada-icon" />
+              <span className="hinchada-name">{player.nombre}</span>
+            </div>
           )
         })}
       </div>

@@ -1,32 +1,19 @@
 import { useState } from 'react'
-import { X, Info, Edit2, Check, ArrowLeftRight, UserPlus, ChevronUp } from 'lucide-react'
+import { X, Info, Edit2, Check, ArrowLeftRight, UserPlus } from 'lucide-react'
 import { PHYSICAL_STATES } from '../../utils/constants'
 
 // Empty slot component for team spots
-function EmptyTeamSlot({ index, onClick, team, suplente, onPromote, allPlayers }) {
-  const suplentePlayer = suplente ? allPlayers[suplente.jugadorId] : null
-  
+function EmptyTeamSlot({ index, onClick, team }) {
   return (
     <div className="empty-team-slot">
       <span className="empty-slot-index">{index + 1}.</span>
-      {suplente && suplentePlayer ? (
-        <button 
-          className="empty-slot-promote-btn"
-          onClick={() => onPromote(suplente.jugadorId, team)}
-          title={`Promover a ${suplentePlayer.nombre}`}
-        >
-          <ChevronUp size={14} />
-          <span className="empty-slot-suplente-name">{suplentePlayer.nombre}</span>
-        </button>
-      ) : (
-        <button 
-          className="empty-slot-add-btn"
-          onClick={() => onClick(team)}
-        >
-          <UserPlus size={14} />
-          <span>Agregar jugador</span>
-        </button>
-      )}
+      <button 
+        className="empty-slot-add-btn"
+        onClick={() => onClick(team)}
+      >
+        <UserPlus size={14} />
+        <span>Agregar jugador</span>
+      </button>
     </div>
   )
 }
@@ -36,13 +23,10 @@ function TeamPanel({
   teamName,
   players, // Array of { player, ...assignment }
   registrations,
-  suplentes, // Array of suplente registrations
-  allPlayers, // Object of all players by ID
   onViewInfo,
   onUnassign,
   onSwapTeam, // Callback to swap player to other team
   onAddPlayer, // Prop for adding player
-  onPromoteSuplente, // Callback to promote a suplente to this team
   onTeamNameChange, // Callback for name change
   jugadoresPorEquipo // Number of players per team
 }) {
@@ -203,24 +187,14 @@ function TeamPanel({
         {players.map((assignment, index) => renderAssignedPlayer(assignment, index))}
         
         {/* Lugares vacíos */}
-        {jugadoresPorEquipo && Array.from({ length: Math.max(0, jugadoresPorEquipo - players.length) }).map((_, index) => {
-          const sortedSuplentes = [...(suplentes || [])].sort((a, b) => 
-            new Date(a.timestamp) - new Date(b.timestamp)
-          )
-          const suplente = sortedSuplentes[index]
-          
-          return (
-            <EmptyTeamSlot
-              key={`empty-${index}`}
-              index={players.length + index}
-              onClick={onAddPlayer}
-              team={team}
-              suplente={suplente}
-              onPromote={onPromoteSuplente}
-              allPlayers={allPlayers}
-            />
-          )
-        })}
+        {jugadoresPorEquipo && Array.from({ length: Math.max(0, jugadoresPorEquipo - players.length) }).map((_, index) => (
+          <EmptyTeamSlot
+            key={`empty-${index}`}
+            index={players.length + index}
+            onClick={onAddPlayer}
+            team={team}
+          />
+        ))}
       </div>
     </div>
   )

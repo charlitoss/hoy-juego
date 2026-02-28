@@ -388,13 +388,10 @@ function TeamBuilderStep({ match, onRegisterAddPlayerHandler }) {
           teamName={teamConfig.nombreEquipoBlanco}
           players={blancoPlayers}
           registrations={registrations}
-          suplentes={suplentes}
-          allPlayers={players}
           onViewInfo={handleViewPlayerInfo}
           onUnassign={handleUnassignPlayer}
           onSwapTeam={handleSwapTeam}
           onAddPlayer={handleOpenJoinFromEmptySlot}
-          onPromoteSuplente={handlePromoteSuplente}
           onTeamNameChange={handleTeamNameChange}
           jugadoresPorEquipo={match.jugadoresPorEquipo}
         />
@@ -440,13 +437,10 @@ function TeamBuilderStep({ match, onRegisterAddPlayerHandler }) {
           teamName={teamConfig.nombreEquipoOscuro}
           players={oscuroPlayers}
           registrations={registrations}
-          suplentes={suplentes}
-          allPlayers={players}
           onViewInfo={handleViewPlayerInfo}
           onUnassign={handleUnassignPlayer}
           onSwapTeam={handleSwapTeam}
           onAddPlayer={handleOpenJoinFromEmptySlot}
-          onPromoteSuplente={handlePromoteSuplente}
           onTeamNameChange={handleTeamNameChange}
           jugadoresPorEquipo={match.jugadoresPorEquipo}
         />

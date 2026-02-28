@@ -1280,14 +1280,50 @@ h4 { font-size: var(--type-lg); }
 
 .inscription-extra-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inscription-extra-item {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
-  padding-left: var(--space-5);
+  padding: 4px 8px;
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+}
+
+.inscription-extra-item.suplente {
+  border-left: 3px solid var(--semantic-warning);
+}
+
+.inscription-extra-item.hinchada {
+  border-left: 3px solid var(--semantic-info);
+}
+
+.inscription-extra-priority {
+  font-size: var(--type-2xs);
+  font-weight: 700;
+  color: var(--semantic-warning);
+  background: rgba(255,179,0,0.15);
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-circle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inscription-extra-icon {
+  color: var(--semantic-info);
+  flex-shrink: 0;
 }
 
 .inscription-extra-name {
-  font-size: var(--type-sm);
-  color: var(--text-secondary);
+  flex: 1;
+  font-size: var(--type-xs);
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 /* Action Buttons */
@@ -1939,7 +1975,6 @@ h4 { font-size: var(--type-lg); }
   display: grid;
   grid-template-columns: 260px 1fr 260px;
   gap: var(--space-4);
-  column-gap: 0px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -2838,13 +2873,31 @@ h4 { font-size: var(--type-lg); }
 }
 
 .hinchada-list {
-  font-size: var(--type-xs);
-  color: var(--text-secondary);
-  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hinchada-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 8px;
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--semantic-info);
+}
+
+.hinchada-icon {
+  color: var(--semantic-info);
+  flex-shrink: 0;
 }
 
 .hinchada-name {
-  display: inline;
+  flex: 1;
+  font-size: var(--type-xs);
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 /* ===================================

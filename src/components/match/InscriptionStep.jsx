@@ -163,9 +163,10 @@ function InscriptionStep({ match, onContinue, onRegisterAddPlayerHandler }) {
                   const player = players[reg.jugadorId]
                   if (!player) return null
                   return (
-                    <span key={reg.jugadorId} className="inscription-extra-name">
-                      {index + 1}. {player.nombre}
-                    </span>
+                    <div key={reg.jugadorId} className="inscription-extra-item suplente">
+                      <span className="inscription-extra-priority">{index + 1}</span>
+                      <span className="inscription-extra-name">{player.nombre}</span>
+                    </div>
                   )
                 })}
               </div>
@@ -179,13 +180,14 @@ function InscriptionStep({ match, onContinue, onRegisterAddPlayerHandler }) {
                 <span>Hinchada ({hinchada.length})</span>
               </div>
               <div className="inscription-extra-list">
-                {hinchada.map((reg, index) => {
+                {hinchada.map((reg) => {
                   const player = players[reg.jugadorId]
                   if (!player) return null
                   return (
-                    <span key={reg.jugadorId} className="inscription-extra-name">
-                      {player.nombre}{index < hinchada.length - 1 ? ', ' : ''}
-                    </span>
+                    <div key={reg.jugadorId} className="inscription-extra-item hinchada">
+                      <Eye size={14} className="inscription-extra-icon" />
+                      <span className="inscription-extra-name">{player.nombre}</span>
+                    </div>
                   )
                 })}
               </div>
