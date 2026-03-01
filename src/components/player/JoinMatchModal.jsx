@@ -97,36 +97,30 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
     return true // hinchada always available
   }
   
-  // Add friend(s) to the list - supports multiple names separated by comma
-  const handleAddFriend = () => {
-    setError('')
-    
-    // Parse multiple names separated by comma
-    const names = friendName.split(',').map(n => n.trim()).filter(n => n.length > 0)
+  // Process friend names and return validated friends + any errors
+  // This is extracted so it can be reused by handleAddFriend and handleSubmit
+  const processFriendNames = (namesString, currentFriends) => {
+    const names = namesString.split(',').map(n => n.trim()).filter(n => n.length > 0)
     
     if (names.length === 0) {
-      setError('Ingresa el nombre del amigo')
-      return
+      return { newFriends: [], errors: [] }
     }
     
     const errors = []
     const newFriends = []
     
     for (const name of names) {
-      // Validate name length
       if (name.length < 2) {
         errors.push(`"${name}" debe tener al menos 2 caracteres`)
         continue
       }
       
-      // Check if same as main player
       if (nombre.trim().toLowerCase() === name.toLowerCase()) {
         errors.push(`"${name}" es tu propio nombre`)
         continue
       }
       
-      // Check if already in the friends list (existing + new)
-      const alreadyInList = friends.some(f => f.nombre.toLowerCase() === name.toLowerCase()) ||
+      const alreadyInList = currentFriends.some(f => f.nombre.toLowerCase() === name.toLowerCase()) ||
         newFriends.some(f => f.nombre.toLowerCase() === name.toLowerCase())
       
       if (alreadyInList) {
@@ -134,7 +128,6 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
         continue
       }
       
-      // Check if already registered in the match
       const existingPlayer = Object.values(allPlayers).find(
         p => p.nombre.toLowerCase() === name.toLowerCase()
       )
@@ -149,24 +142,34 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
         }
       }
       
-      // Valid - add to new friends
       newFriends.push({
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        id: `${Date.now()}_${Math.random().toString(36).substr(2, 5)}_${newFriends.length}`,
         nombre: name
       })
     }
     
-    // Add valid friends
+    return { newFriends, errors }
+  }
+  
+  // Add friend(s) to the list - supports multiple names separated by comma
+  const handleAddFriend = () => {
+    setError('')
+    
+    if (!friendName.trim()) {
+      setError('Ingresa el nombre del amigo')
+      return
+    }
+    
+    const { newFriends, errors } = processFriendNames(friendName, friends)
+    
     if (newFriends.length > 0) {
       setFriends([...friends, ...newFriends])
     }
     
-    // Show errors if any
     if (errors.length > 0) {
       setError(errors.join('. '))
     }
     
-    // Clear input and keep focus
     setFriendName('')
     friendInputRef.current?.focus()
   }
@@ -179,6 +182,21 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
   // Submit main player + friends
   const handleSubmit = async () => {
     setError('')
+    
+    // Auto-add any pending friend names before submitting
+    let finalFriends = friends
+    if (friendName.trim() && tipoInscripcion !== 'hinchada') {
+      const { newFriends, errors } = processFriendNames(friendName, friends)
+      if (newFriends.length > 0) {
+        finalFriends = [...friends, ...newFriends]
+        setFriends(finalFriends)
+        setFriendName('')
+      }
+      if (errors.length > 0) {
+        setError(errors.join('. '))
+        return
+      }
+    }
     
     // Validate main player name
     const trimmedName = nombre.trim()
@@ -255,8 +273,8 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
       let jugadorSpotsUsed = tipoInscripcion === 'jugador' ? 1 : 0
       
       // 2. Register friends - overflow goes to suplentes if registering as jugador
-      for (let i = 0; i < friends.length; i++) {
-        const friend = friends[i]
+      for (let i = 0; i < finalFriends.length; i++) {
+        const friend = finalFriends[i]
         let friendPlayerId = Object.values(allPlayers).find(
           p => p.nombre.toLowerCase() === friend.nombre.toLowerCase()
         )?._id
@@ -340,7 +358,11 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
     }
   }
   
-  const totalToRegister = 1 + friends.length
+  // Count pending friends in the input field (comma-separated names)
+  const pendingFriendsCount = friendName.trim() 
+    ? friendName.split(',').map(n => n.trim()).filter(n => n.length > 0).length 
+    : 0
+  const totalToRegister = 1 + friends.length + pendingFriendsCount
   const cupoLleno = spotsInfo.jugadores >= spotsInfo.cupoTotal
   const suplentesLleno = spotsInfo.suplentes >= spotsInfo.maxSuplentes
   
@@ -366,7 +388,7 @@ function JoinMatchModal({ isOpen, onClose, matchId, onJoined, match, playerOnly 
           >
             {isSubmitting 
               ? 'Inscribiendo...' 
-              : friends.length > 0 
+              : (friends.length > 0 || pendingFriendsCount > 0)
                 ? `Confirmar (${totalToRegister})` 
                 : 'Confirmar'
             }
